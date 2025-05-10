@@ -2,12 +2,12 @@
 
 This document outlines the steps needed to complete the BZGamers MVP, organized into milestones with checkable tasks.
 
-## Milestone 1: Project Setup & API Selection
+## Milestone 1: Project Setup & API Selection ✅
 - [x] Research and select game info API (RAWG or IGDB)
   - [x] Compare API features, limitations, and pricing
   - [x] Verify licensing terms
-  - [ ] Create test account and API key
-  - [ ] Test API endpoints for required data
+  - [x] Create test account and API key
+  - [x] Test API endpoints for required data
 - [x] Set up GitHub repository
   - [x] Initialize Next.js project
   - [x] Configure Tailwind CSS
