@@ -19,19 +19,19 @@ This document outlines the steps needed to complete the BZGamers MVP, organized 
   - [x] Set up ESLint and Prettier
   - [x] Create environment variables template
 
-## Milestone 2: Core UI Development
-- [ ] Design and implement welcome screen
-  - [ ] Create friendly greeting message
-  - [ ] Design and implement the two main option buttons
-  - [ ] Add responsive layout for mobile/desktop
-- [ ] Implement theme switching (dark/bright mode)
-  - [ ] Set up Tailwind theme configuration
-  - [ ] Create theme toggle component
-  - [ ] Implement theme persistence
-- [ ] Create basic layout components
-  - [ ] Header/navigation component
-  - [ ] Footer component
-  - [ ] Layout wrapper
+## Milestone 2: Core UI Development ✅
+- [x] Design and implement welcome screen
+  - [x] Create friendly greeting message
+  - [x] Design and implement the two main option buttons
+  - [x] Add responsive layout for mobile/desktop
+- [x] Implement theme switching (dark/bright mode)
+  - [x] Set up Tailwind theme configuration
+  - [x] Create theme toggle component
+  - [x] Implement theme persistence
+- [x] Create basic layout components
+  - [x] Header/navigation component
+  - [x] Footer component
+  - [x] Layout wrapper
 
 ## Milestone 3: Mood-Based Game Finder
 - [ ] Design mood selection interface
