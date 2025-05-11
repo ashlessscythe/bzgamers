@@ -19,7 +19,7 @@ This document outlines the steps needed to complete the BZGamers MVP, organized 
   - [x] Set up ESLint and Prettier
   - [x] Create environment variables template
 
-## Milestone 2: Core UI Development ✅
+## Milestone 2: Core UI Development
 - [x] Design and implement welcome screen
   - [x] Create friendly greeting message
   - [x] Design and implement the two main option buttons
@@ -34,19 +34,19 @@ This document outlines the steps needed to complete the BZGamers MVP, organized 
   - [x] Layout wrapper
 
 ## Milestone 3: Mood-Based Game Finder
-- [ ] Design mood selection interface
-  - [ ] Create mood selection component
-  - [ ] Implement time availability selector
-  - [ ] Add genre preference options
-- [ ] Implement API integration
-  - [ ] Create API service for game data
-  - [ ] Implement caching strategy
-  - [ ] Add error handling
-- [ ] Develop game results display
-  - [ ] Design and implement game cards
-  - [ ] Create loading states
-  - [ ] Add animations with Framer Motion
-  - [ ] Implement filtering and sorting options
+- [x] Design mood selection interface
+  - [x] Create mood selection component
+  - [x] Implement time availability selector
+  - [x] Add genre preference options
+- [x] Implement API integration
+  - [x] Create API service for game data
+  - [x] Implement caching strategy
+  - [x] Add error handling
+- [x] Develop game results display
+  - [x] Design and implement game cards
+  - [x] Create loading states
+  - [x] Add animations with Framer Motion
+  - [x] Implement filtering and sorting options
 
 ## Milestone 4: Authentication & User Features
 - [ ] Set up Neon.tech PostgreSQL database
