@@ -1,4 +1,6 @@
 /** @type {import('tailwindcss').Config} */
+const { lineClampPlugin } = require('./src/styles/tailwind-plugins')
+
 module.exports = {
   content: [
     './src/pages/**/*.{js,ts,jsx,tsx}',
@@ -19,8 +21,18 @@ module.exports = {
           dark: '#6d28d9', // violet-700
         },
       },
+      lineClamp: {
+        1: 1,
+        2: 2,
+        3: 3,
+        4: 4,
+        5: 5,
+        6: 6,
+      },
     },
   },
-  plugins: [],
+  plugins: [
+    lineClampPlugin,
+  ],
   darkMode: 'class', // Enable dark mode with class strategy for theme switching
 }
