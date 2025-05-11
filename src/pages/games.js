@@ -85,9 +85,26 @@ export default function Games() {
     setError(null)
     
     try {
-      // If selectedGenre is a string (from the fallback list), convert it to a genre name
+      // If selectedGenre is a string (from the fallback list), map it to the appropriate genre ID or name
       // Otherwise, it's already a genre ID from the API
-      const genreParam = typeof selectedGenre === 'string' ? selectedGenre : selectedGenre;
+      let genreParam = selectedGenre;
+      
+      // Map hardcoded genre names to appropriate IGDB genre IDs
+      if (typeof selectedGenre === 'string') {
+        const genreMapping = {
+          'Action': 25, // Map "Action" to "Hack and slash/Beat 'em up" (ID: 25)
+          'Adventure': 31,
+          'RPG': 12, // Role-playing game
+          'Strategy': 15,
+          'Simulation': 13,
+          'Sports': 14,
+          'Puzzle': 9,
+          'Indie': 32,
+          'Shooter': 5
+        };
+        
+        genreParam = genreMapping[selectedGenre] || selectedGenre;
+      }
       
       const params = {
         mood: selectedMood ? MOOD_MAP[selectedMood] : null,

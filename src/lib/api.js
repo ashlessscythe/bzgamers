@@ -8,6 +8,9 @@
  * When API credentials are not available, it falls back to mock data.
  */
 
+// Load environment variables
+require('dotenv').config()
+
 // Import cache and error handling modules
 const { withCache, setCachedItem, getCachedItem } = require('./api-cache')
 const { handleApiError, ERROR_TYPES, createError } = require('./error-handler')
@@ -181,8 +184,8 @@ async function igdbRequest(endpoint, query) {
  * @returns {string} - Cache key
  */
 function generateGamesCacheKey(options) {
-  const { limit, offset, fields, where, sort } = options
-  return `${CACHE_KEYS.GAME_PREFIX}${where}_${sort}_${limit}_${offset}_${fields.replace(/\s/g, '')}`
+  const { limit = 10, offset = 0, fields = '*', where = '', sort = 'total_rating desc' } = options || {}
+  return `${CACHE_KEYS.GAME_PREFIX}${where}_${sort}_${limit}_${offset}_${fields.replace ? fields.replace(/\s/g, '') : fields}`
 }
 
 /**
@@ -318,7 +321,8 @@ const findGamesByMood = withCache(
       
       if (isNaN(genre)) {
         // For string genre names, use a case-insensitive search
-        genreFilter = `genres.name ~ *"${genre}"*`
+        // Use a more flexible search pattern
+        genreFilter = `genres.name ~ "${genre}"`
       } else {
         // For numeric IDs, use exact match
         genreFilter = `genres = (${genre})`
@@ -331,6 +335,8 @@ const findGamesByMood = withCache(
     const where = whereClause.length > 0 
       ? whereClause.join(' & ') 
       : ''
+    
+    console.log('Generated where clause:', where);
     
     return fetchGames({
       limit: 12,

@@ -261,13 +261,13 @@ function filterGamesByMood(mood, timeAvailable, genre) {
   if (timeAvailable) {
     switch(timeAvailable) {
       case 'short':
-        filteredGames = filteredGames.filter(game => game.total_rating < 75);
+        filteredGames = filteredGames.filter(game => game.total_rating <= 80);
         break;
       case 'medium':
-        filteredGames = filteredGames.filter(game => game.total_rating >= 75 && game.total_rating < 85);
+        filteredGames = filteredGames.filter(game => game.total_rating > 80 && game.total_rating < 90);
         break;
       case 'long':
-        filteredGames = filteredGames.filter(game => game.total_rating >= 85);
+        filteredGames = filteredGames.filter(game => game.total_rating >= 90);
         break;
     }
   }
