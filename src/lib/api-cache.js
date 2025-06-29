@@ -130,8 +130,11 @@ function withCache(fn, keyGenerator, ttl = DEFAULT_TTL) {
     // Try to get from cache first
     const cachedResult = getCachedItem(key)
     if (cachedResult !== null) {
+      console.log(`[CACHE HIT] Key: ${key}`)
       return cachedResult
     }
+    
+    console.log(`[CACHE MISS] Key: ${key} - calling original function`)
     
     // If not in cache, call the original function
     const result = await fn(...args)

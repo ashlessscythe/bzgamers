@@ -57,6 +57,8 @@ This document outlines the steps needed to complete the BZGamers MVP, organized 
   - [ ] Set up Neon Auth or Clerk
   - [ ] Create sign-up/login flows
   - [ ] Implement anonymous browsing
+  - [ ] Add admin UI/endpoint to view Twitch token status and config
+  - [ ] Add logging/alerts for Twitch token failures
 - [ ] Add user-specific features
   - [ ] Create bookmarking functionality
   - [ ] Implement user preferences storage

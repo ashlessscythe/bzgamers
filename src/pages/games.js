@@ -2,8 +2,6 @@ import Head from 'next/head'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
-import { findGamesByMood, fetchGenres } from '../lib/api'
-import MoodSelector from '../components/MoodSelector'
 import GameResults from '../components/GameResults'
 import { getUserFriendlyMessage } from '../lib/error-handler'
 
@@ -51,7 +49,11 @@ export default function Games() {
   useEffect(() => {
     async function loadGenres() {
       try {
-        const genreData = await fetchGenres()
+        const response = await fetch('/api/genres')
+        if (!response.ok) {
+          throw new Error('Failed to fetch genres')
+        }
+        const genreData = await response.json()
         setGenres(genreData)
       } catch (err) {
         console.error('Failed to load genres:', err)
@@ -112,7 +114,19 @@ export default function Games() {
         genre: genreParam
       }
       
-      const gameResults = await findGamesByMood(params)
+      const response = await fetch('/api/games-by-mood', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(params)
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to find games')
+      }
+      
+      const gameResults = await response.json()
       console.log('Game results:', gameResults)
       setResults(gameResults)
       setShowResults(true)
@@ -175,8 +189,8 @@ export default function Games() {
         <motion.div variants={itemVariants}>
           <h1 className="text-3xl md:text-4xl font-bold mb-6">Find Your Perfect Game</h1>
           <p className="text-lg text-gray-600 dark:text-gray-400 mb-8">
-            Tell us how you're feeling, how much time you have, and what you're in the mood for.
-            We'll recommend games that match your current state of mind.
+            Tell us how you&apos;re feeling, how much time you have, and what you&apos;re in the mood for.
+            We&apos;ll recommend games that match your current state of mind.
           </p>
         </motion.div>
 

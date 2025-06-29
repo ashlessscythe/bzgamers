@@ -54,13 +54,13 @@ export default function About() {
           
           <h2 className="text-2xl font-bold mb-4">What We Do</h2>
           <p className="text-lg text-gray-600 dark:text-gray-400 mb-6">
-            We believe that gaming is more than just a hobby—it's a way to express yourself, connect with others, and experience new worlds. 
+            We believe that gaming is more than just a hobby—it&apos;s a way to express yourself, connect with others, and experience new worlds. 
             Our mood-based game finder helps you discover games that match your current state of mind, available time, and preferences.
           </p>
           
           <h2 className="text-2xl font-bold mb-4">Our Vision</h2>
           <p className="text-lg text-gray-600 dark:text-gray-400">
-            We're building a community where gamers can find not only the perfect game to play but also the perfect people to play with. 
+            We&apos;re building a community where gamers can find not only the perfect game to play but also the perfect people to play with. 
             Our upcoming features will include matchmaking based on mood, taste, and availability, making it easier than ever to connect with fellow gamers.
           </p>
         </motion.div>
@@ -77,7 +77,7 @@ export default function About() {
             </div>
             <h3 className="text-xl font-bold mb-2">Mood-Based</h3>
             <p className="text-gray-600 dark:text-gray-400">
-              Find games that match exactly how you're feeling right now
+              Find games that match exactly how you&apos;re feeling right now
             </p>
           </div>
           

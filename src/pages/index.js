@@ -150,7 +150,7 @@ export default function Home() {
                 <span className="font-bold text-primary">1</span>
               </div>
               <h3 className="font-medium mb-1">Select Your Mood</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400 text-center">Tell us how you're feeling and what kind of experience you want</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 text-center">Tell us how you&apos;re feeling and what kind of experience you want</p>
             </div>
             <div className="flex flex-col items-center">
               <div className="bg-primary/10 dark:bg-primary/20 w-12 h-12 rounded-full flex items-center justify-center mb-3">

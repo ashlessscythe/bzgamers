@@ -24,6 +24,8 @@ const USE_MOCK_DATA = process.env.NODE_ENV === 'development' &&
 // Log whether we're using mock data
 if (USE_MOCK_DATA) {
   console.log('⚠️ API credentials not found. Using mock data for development.')
+} else {
+  console.log('✅ Using real IGDB API with credentials from .env')
 }
 
 // Base URLs for IGDB API
@@ -63,10 +65,21 @@ async function getAccessToken() {
   }
   
   try {
-    // Check if we have a valid cached token
+    // Check if we have a cached token
     const cachedToken = getCachedItem(CACHE_KEYS.AUTH_TOKEN)
+    
     if (cachedToken) {
-      return cachedToken.token
+      // Check if token is still valid (with 5 minute buffer)
+      const now = Date.now()
+      const tokenExpiryTime = cachedToken.createdAt + (cachedToken.expiresIn * 1000)
+      const bufferTime = 5 * 60 * 1000 // 5 minutes in milliseconds
+      
+      if (now < (tokenExpiryTime - bufferTime)) {
+        console.log(`✅ Using cached token (expires in ${Math.round((tokenExpiryTime - now) / 1000)}s)`)
+        return cachedToken.token
+      } else {
+        console.log(`🔄 Cached token expired or expiring soon, refreshing...`)
+      }
     }
 
     // Ensure we have client credentials
@@ -77,6 +90,8 @@ async function getAccessToken() {
       )
     }
 
+    console.log(`🔐 Requesting new Twitch OAuth2 token...`)
+    
     // Request a new token
     const response = await fetch(
       `${TWITCH_AUTH_URL}?client_id=${CLIENT_ID}&client_secret=${CLIENT_SECRET}&grant_type=client_credentials`,
@@ -91,17 +106,19 @@ async function getAccessToken() {
     
     const data = await response.json()
     
-    // Cache the token with TTL slightly shorter than the actual expiry
+    // Store token data with creation timestamp
     const tokenData = {
       token: data.access_token,
-      expiresIn: data.expires_in
+      expiresIn: data.expires_in,
+      createdAt: Date.now(),
+      tokenType: data.token_type
     }
     
-    setCachedItem(
-      CACHE_KEYS.AUTH_TOKEN, 
-      tokenData, 
-      (data.expires_in * 1000) - 300000 // Expire 5 minutes early to be safe
-    )
+    // Cache the token with TTL slightly shorter than the actual expiry
+    const cacheTTL = (data.expires_in * 1000) - 300000 // Expire 5 minutes early to be safe
+    setCachedItem(CACHE_KEYS.AUTH_TOKEN, tokenData, cacheTTL)
+    
+    console.log(`✅ New token obtained (expires in ${data.expires_in}s)`)
     
     return data.access_token
   } catch (error) {
@@ -148,6 +165,10 @@ async function igdbRequest(endpoint, query) {
     
     const accessToken = await getAccessToken()
     
+    // LOGGING: Print outgoing request
+    console.log(`\n[IGDB REQUEST] Endpoint: ${endpoint}`)
+    console.log(`[IGDB REQUEST] Query: ${query}`)
+    
     const response = await fetch(`${IGDB_API_URL}/${endpoint}`, {
       method: 'POST',
       headers: {
@@ -170,7 +191,11 @@ async function igdbRequest(endpoint, query) {
       throw error
     }
     
-    return await response.json()
+    const data = await response.json()
+    // LOGGING: Print part of the response
+    console.log(`[IGDB RESPONSE] First 2 results:`, Array.isArray(data) ? data.slice(0,2) : data)
+    
+    return data
   } catch (error) {
     // Release the rate limit slot on error
     rateLimiter.releaseSlot()
@@ -289,10 +314,15 @@ const searchGames = withCache(
  */
 const findGamesByMood = withCache(
   async function({ mood, timeAvailable, genre }) {
+    console.log(`\n[FIND_GAMES_BY_MOOD] Called with:`, { mood, timeAvailable, genre })
+    
     // If using mock data, use the mock filtering function
     if (USE_MOCK_DATA) {
+      console.log('[FIND_GAMES_BY_MOOD] Using mock data')
       return filterGamesByMood(mood, timeAvailable, genre)
     }
+    
+    console.log('[FIND_GAMES_BY_MOOD] Using real IGDB API')
     
     // Map moods to IGDB themes and game modes
     const moodMappings = {
@@ -458,6 +488,76 @@ async function testApiConnection() {
   }
 }
 
+/**
+ * Get the current token status and information
+ * @returns {Object} - Token status information
+ */
+function getTokenStatus() {
+  if (USE_MOCK_DATA) {
+    return {
+      hasToken: true,
+      isExpired: false,
+      expiresIn: null,
+      tokenType: 'mock',
+      mockData: true
+    }
+  }
+  
+  const cachedToken = getCachedItem(CACHE_KEYS.AUTH_TOKEN)
+  
+  if (!cachedToken) {
+    return {
+      hasToken: false,
+      isExpired: true,
+      expiresIn: 0,
+      tokenType: null,
+      mockData: false
+    }
+  }
+  
+  const now = Date.now()
+  const tokenExpiryTime = cachedToken.createdAt + (cachedToken.expiresIn * 1000)
+  const expiresIn = Math.max(0, Math.round((tokenExpiryTime - now) / 1000))
+  const isExpired = now >= tokenExpiryTime
+  
+  return {
+    hasToken: true,
+    isExpired,
+    expiresIn,
+    tokenType: cachedToken.tokenType,
+    mockData: false,
+    createdAt: new Date(cachedToken.createdAt).toISOString(),
+    expiresAt: new Date(tokenExpiryTime).toISOString()
+  }
+}
+
+/**
+ * Force refresh the access token (useful for testing or manual refresh)
+ * @returns {Promise<string>} - New access token
+ */
+async function refreshAccessToken() {
+  // Clear the cached token to force a new request
+  const cache = require('./api-cache')
+  cache.clearCache(CACHE_KEYS.AUTH_TOKEN)
+  
+  console.log('🔄 Forcing token refresh...')
+  return getAccessToken()
+}
+
+/**
+ * Get authentication configuration status
+ * @returns {Object} - Auth configuration status
+ */
+function getAuthConfig() {
+  return {
+    hasClientId: !!CLIENT_ID,
+    hasClientSecret: !!CLIENT_SECRET,
+    authUrl: TWITCH_AUTH_URL,
+    usingMockData: USE_MOCK_DATA,
+    environment: process.env.NODE_ENV
+  }
+}
+
 // Export all API functions
 module.exports = {
   getAccessToken,
@@ -468,5 +568,8 @@ module.exports = {
   findGamesByMood,
   fetchGenres,
   fetchThemes,
-  testApiConnection
+  testApiConnection,
+  getTokenStatus,
+  refreshAccessToken,
+  getAuthConfig
 }

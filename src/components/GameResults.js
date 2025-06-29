@@ -31,7 +31,7 @@ export default function GameResults({ results, isLoading, onBack }) {
       <div className="text-center py-12">
         <h2 className="text-2xl font-bold mb-4">No Games Found</h2>
         <p className="text-gray-600 dark:text-gray-400 mb-6">
-          We couldn't find any games matching your criteria. Try adjusting your preferences.
+          We couldn&apos;t find any games matching your criteria. Try adjusting your preferences.
         </p>
         <motion.button
           className="btn-primary text-lg py-3 px-8"
