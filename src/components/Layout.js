@@ -1,4 +1,6 @@
-import { useRouter } from 'next/router'
+"use client"
+
+import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import ThemeToggle from './ThemeToggle'
 import MobileMenu from './MobileMenu'
@@ -7,8 +9,8 @@ import MobileMenu from './MobileMenu'
  * Main layout component that wraps all pages
  */
 export default function Layout({ children }) {
-  const router = useRouter()
-  const isActive = (path) => router.pathname === path
+  const pathname = usePathname()
+  const isActive = (path) => pathname === path
 
   return (
     <div className="min-h-screen flex flex-col bg-white dark:bg-gray-900 transition-colors">

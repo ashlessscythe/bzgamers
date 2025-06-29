@@ -1,24 +1,21 @@
+"use client"
+
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
-import { useRouter } from 'next/router'
+import { usePathname } from 'next/navigation'
 
 /**
  * Mobile menu component for navigation on smaller screens
  */
 export default function MobileMenu() {
   const [isOpen, setIsOpen] = useState(false)
-  const router = useRouter()
+  const pathname = usePathname()
   
   // Close the menu when route changes
   useEffect(() => {
-    const handleRouteChange = () => setIsOpen(false)
-    router.events.on('routeChangeStart', handleRouteChange)
-    
-    return () => {
-      router.events.off('routeChangeStart', handleRouteChange)
-    }
-  }, [router])
+    setIsOpen(false)
+  }, [pathname])
   
   // Close menu when escape key is pressed
   useEffect(() => {
@@ -46,7 +43,7 @@ export default function MobileMenu() {
     }
   }, [isOpen])
   
-  const isActive = (path) => router.pathname === path
+  const isActive = (path) => pathname === path
   
   // Animation variants
   const menuVariants = {

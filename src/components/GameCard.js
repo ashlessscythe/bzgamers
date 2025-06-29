@@ -1,9 +1,20 @@
+"use client"
+
 import { motion } from 'framer-motion'
 
 /**
  * GameCard component for displaying individual game information
  */
 export default function GameCard({ game }) {
+  // Safety check for undefined game
+  if (!game) {
+    return (
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4">
+        <p className="text-gray-600 dark:text-gray-400">Game data not available</p>
+      </div>
+    )
+  }
+
   const cardVariants = {
     hidden: { y: 20, opacity: 0 },
     visible: { 
@@ -49,7 +60,7 @@ export default function GameCard({ game }) {
       <div className="relative aspect-[3/4] bg-gray-200 dark:bg-gray-700">
         <img 
           src={getCoverUrl(game.cover)} 
-          alt={game.name}
+          alt={game.name || 'Game'}
           className="w-full h-full object-cover"
           loading="lazy"
         />
@@ -61,10 +72,22 @@ export default function GameCard({ game }) {
       </div>
       
       <div className="p-4">
-        <h3 className="text-lg font-bold mb-1 line-clamp-1">{game.name}</h3>
+        <h3 className="text-lg font-bold mb-1 line-clamp-1">{game.name || 'Unknown Game'}</h3>
         <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
           {formatDate(game.first_release_date)}
         </p>
+        {game.platforms && game.platforms.length > 0 && (
+          <div className="flex flex-wrap gap-1 mb-2">
+            {game.platforms.slice(0, 3).map(platform => (
+              <span
+                key={platform.id}
+                className="text-xs bg-blue-100 dark:bg-blue-700 px-2 py-1 rounded-full"
+              >
+                {platform.name}
+              </span>
+            ))}
+          </div>
+        )}
         
         {game.genres && game.genres.length > 0 && (
           <div className="flex flex-wrap gap-1 mb-3">
@@ -83,14 +106,20 @@ export default function GameCard({ game }) {
           {game.summary || 'No description available.'}
         </p>
         
-        <a 
-          href={game.url || '#'} 
-          target="_blank" 
-          rel="noopener noreferrer"
-          className="btn-primary text-sm py-2 px-4 inline-block"
-        >
-          Learn More
-        </a>
+        <div className="flex flex-col items-center mt-4">
+          <a 
+            href={game.url || '#'} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="btn-primary text-sm py-2 px-4 inline-flex items-center justify-center w-full"
+          >
+            <span>Learn More</span>
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+            </svg>
+          </a>
+          <span className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center block">Powered by IGDB</span>
+        </div>
       </div>
     </motion.div>
   )
