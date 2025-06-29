@@ -1,0 +1,247 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Cached game data from IGDB API
+model CachedGame {
+  id          Int      @id @default(autoincrement())
+  igdbId      Int      @unique // IGDB game ID
+  name        String
+  slug        String?
+  summary     String?
+  storyline   String?
+  rating      Float?
+  ratingCount Int?
+  firstReleaseDate DateTime?
+  category    Int? // IGDB game category
+  status      Int? // IGDB game status
+  
+  // Relationships
+  genres      CachedGameGenre[]
+  platforms   CachedGamePlatform[]
+  themes      CachedGameTheme[]
+  screenshots CachedScreenshot[]
+  artworks    CachedArtwork[]
+  covers      CachedCover[]
+  
+  // Metadata
+  lastUpdated DateTime @default(now())
+  createdAt   DateTime @default(now())
+  
+  @@index([igdbId])
+  @@index([name])
+  @@index([rating])
+  @@index([firstReleaseDate])
+}
+
+// Cached genre data
+model CachedGenre {
+  id          Int      @id @default(autoincrement())
+  igdbId      Int      @unique
+  name        String
+  slug        String?
+  url         String?
+  
+  // Relationships
+  games       CachedGameGenre[]
+  
+  // Metadata
+  lastUpdated DateTime @default(now())
+  createdAt   DateTime @default(now())
+  
+  @@index([igdbId])
+  @@index([name])
+}
+
+// Cached platform data
+model CachedPlatform {
+  id          Int      @id @default(autoincrement())
+  igdbId      Int      @unique
+  name        String
+  slug        String?
+  abbreviation String?
+  url         String?
+  
+  // Relationships
+  games       CachedGamePlatform[]
+  
+  // Metadata
+  lastUpdated DateTime @default(now())
+  createdAt   DateTime @default(now())
+  
+  @@index([igdbId])
+  @@index([name])
+}
+
+// Cached theme data
+model CachedTheme {
+  id          Int      @id @default(autoincrement())
+  igdbId      Int      @unique
+  name        String
+  slug        String?
+  url         String?
+  
+  // Relationships
+  games       CachedGameTheme[]
+  
+  // Metadata
+  lastUpdated DateTime @default(now())
+  createdAt   DateTime @default(now())
+  
+  @@index([igdbId])
+  @@index([name])
+}
+
+// Cached image data (screenshots, artworks, covers)
+model CachedImage {
+  id          Int      @id @default(autoincrement())
+  igdbId      Int      @unique
+  url         String
+  width       Int?
+  height      Int?
+  imageId     String? // IGDB image ID
+  type        ImageType // screenshot, artwork, cover
+  
+  // Relationships
+  screenshots CachedScreenshot[]
+  artworks    CachedArtwork[]
+  covers      CachedCover[]
+  
+  // Metadata
+  lastUpdated DateTime @default(now())
+  createdAt   DateTime @default(now())
+  
+  @@index([igdbId])
+  @@index([type])
+}
+
+// Many-to-many relationships
+model CachedGameGenre {
+  id      Int   @id @default(autoincrement())
+  gameId  Int
+  genreId Int
+  
+  game    CachedGame @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  genre   CachedGenre @relation(fields: [genreId], references: [id], onDelete: Cascade)
+  
+  @@unique([gameId, genreId])
+  @@index([gameId])
+  @@index([genreId])
+}
+
+model CachedGamePlatform {
+  id        Int   @id @default(autoincrement())
+  gameId    Int
+  platformId Int
+  
+  game      CachedGame @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  platform  CachedPlatform @relation(fields: [platformId], references: [id], onDelete: Cascade)
+  
+  @@unique([gameId, platformId])
+  @@index([gameId])
+  @@index([platformId])
+}
+
+model CachedGameTheme {
+  id      Int   @id @default(autoincrement())
+  gameId  Int
+  themeId Int
+  
+  game    CachedGame @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  theme   CachedTheme @relation(fields: [themeId], references: [id], onDelete: Cascade)
+  
+  @@unique([gameId, themeId])
+  @@index([gameId])
+  @@index([themeId])
+}
+
+model CachedScreenshot {
+  id      Int   @id @default(autoincrement())
+  gameId  Int
+  imageId Int
+  
+  game    CachedGame @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  image   CachedImage @relation(fields: [imageId], references: [id], onDelete: Cascade)
+  
+  @@unique([gameId, imageId])
+  @@index([gameId])
+  @@index([imageId])
+}
+
+model CachedArtwork {
+  id      Int   @id @default(autoincrement())
+  gameId  Int
+  imageId Int
+  
+  game    CachedGame @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  image   CachedImage @relation(fields: [imageId], references: [id], onDelete: Cascade)
+  
+  @@unique([gameId, imageId])
+  @@index([gameId])
+  @@index([imageId])
+}
+
+model CachedCover {
+  id      Int   @id @default(autoincrement())
+  gameId  Int
+  imageId Int
+  
+  game    CachedGame @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  image   CachedImage @relation(fields: [imageId], references: [id], onDelete: Cascade)
+  
+  @@unique([gameId, imageId])
+  @@index([gameId])
+  @@index([imageId])
+}
+
+// Search cache for mood-based queries
+model SearchCache {
+  id          Int      @id @default(autoincrement())
+  queryHash   String   @unique // Hash of search parameters
+  queryParams Json     // Search parameters as JSON
+  results     Json     // Cached results
+  resultCount Int
+  ttl         DateTime // Time to live
+  
+  // Metadata
+  createdAt   DateTime @default(now())
+  lastAccessed DateTime @default(now())
+  
+  @@index([queryHash])
+  @@index([ttl])
+}
+
+// API rate limiting and usage tracking
+model ApiUsage {
+  id          Int      @id @default(autoincrement())
+  endpoint    String
+  method      String
+  statusCode  Int
+  responseTime Int? // in milliseconds
+  timestamp   DateTime @default(now())
+  ipAddress   String?
+  userAgent   String?
+  
+  @@index([endpoint])
+  @@index([timestamp])
+  @@index([statusCode])
+}
+
+// Enums
+enum ImageType {
+  SCREENSHOT
+  ARTWORK
+  COVER
+}

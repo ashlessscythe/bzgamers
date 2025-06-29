@@ -12,5 +12,20 @@ module.exports = {
     browser: true,
     node: true,
     es6: true,
+    es2020: true, // Add ES2020 support for BigInt, globalThis, etc.
+  },
+  ignorePatterns: [
+    'src/generated/prisma/**/*', // Ignore generated Prisma files
+  ],
+  globals: {
+    // Add globals that are used in generated files
+    globalThis: 'readonly',
+    BigInt: 'readonly',
+    SharedArrayBuffer: 'readonly',
+    WeakRef: 'readonly',
+    WorkerGlobalScope: 'readonly',
+    DedicatedWorkerGlobalScope: 'readonly',
+    SharedWorkerGlobalScope: 'readonly',
+    ServiceWorkerGlobalScope: 'readonly',
   },
 }
