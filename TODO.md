@@ -38,6 +38,11 @@ This document outlines the steps needed to complete the BZGamers MVP, organized 
   - [x] Create mood selection component
   - [x] Implement time availability selector
   - [x] Add genre preference options
+- [ ] Enhance mood and genre selection interface
+  - [ ] Expand mood selection with "See All" option for esoteric tastes
+  - [ ] Expand genre selection with "Advanced" toggle for more options
+  - [ ] Keep basic/common moods and genres immediately visible
+  - [ ] Implement collapsible advanced sections
 - [x] Implement API integration
   - [x] Create API service for game data
   - [x] Implement caching strategy
@@ -47,6 +52,21 @@ This document outlines the steps needed to complete the BZGamers MVP, organized 
   - [x] Create loading states
   - [x] Add animations with Framer Motion
   - [x] Implement filtering and sorting options
+- [ ] Add advanced filtering options to results
+  - [ ] Implement date range filters (release year/decade)
+  - [ ] Add platform filters (PC, PlayStation, Xbox, Nintendo, etc.)
+  - [ ] Create filter UI components with clear/apply functionality
+  - [ ] Integrate filters with existing API calls
+  - [ ] Add filter state management and persistence
+- [ ] Implement "Give me a game like..." feature (Beta)
+  - [ ] Create game search input component
+  - [ ] Implement game lookup via API
+  - [ ] Display game's themes and genres for selection
+  - [ ] Add multi-select interface (limit to 4 selections)
+  - [ ] Create API endpoint for finding similar games
+  - [ ] Implement results display with game recommendations
+  - [ ] Add loading states and error handling
+  - [ ] Integrate with existing caching system
 
 ## Milestone 4: Database & Caching System ✅
 - [x] Set up Neon.tech PostgreSQL database
