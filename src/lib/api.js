@@ -15,6 +15,7 @@ require('dotenv').config()
 const { withCache, setCachedItem, getCachedItem } = require('./api-cache')
 const { handleApiError, ERROR_TYPES, createError } = require('./error-handler')
 const { MOCK_GENRES, MOCK_GAMES, filterGamesByMood } = require('./mock-data')
+const rateLimiter = require('./rate-limiter')
 
 // Flag to determine if we're using mock data
 const USE_MOCK_DATA = process.env.NODE_ENV === 'development' && 
@@ -142,6 +143,9 @@ async function igdbRequest(endpoint, query) {
   }
   
   try {
+    // Wait for rate limit slot before making request
+    await rateLimiter.waitForSlot()
+    
     const accessToken = await getAccessToken()
     
     const response = await fetch(`${IGDB_API_URL}/${endpoint}`, {
@@ -155,6 +159,9 @@ async function igdbRequest(endpoint, query) {
       body: query
     })
     
+    // Release the rate limit slot
+    rateLimiter.releaseSlot()
+    
     if (!response.ok) {
       const error = new Error(`API request failed with status ${response.status}`)
       error.status = response.status
@@ -165,6 +172,9 @@ async function igdbRequest(endpoint, query) {
     
     return await response.json()
   } catch (error) {
+    // Release the rate limit slot on error
+    rateLimiter.releaseSlot()
+    
     const handledError = handleApiError(error, `igdbRequest:${endpoint}`)
     
     // For some errors, we want to return an empty array instead of throwing
@@ -394,7 +404,14 @@ async function testApiConnection() {
         platforms: true
       },
       cacheEnabled: true,
-      mockData: true
+      mockData: true,
+      rateLimiter: {
+        status: 'disabled (mock data)',
+        requestsInWindow: 0,
+        maxRequestsPerSecond: 4,
+        concurrentRequests: 0,
+        maxConcurrentRequests: 8
+      }
     }
   }
   
@@ -420,7 +437,8 @@ async function testApiConnection() {
         platforms: platforms.length > 0
       },
       cacheEnabled: true,
-      mockData: false
+      mockData: false,
+      rateLimiter: rateLimiter.getStatus()
     }
   } catch (error) {
     console.error('API connection test failed:', error)
@@ -434,7 +452,8 @@ async function testApiConnection() {
         platforms: false
       },
       cacheEnabled: true,
-      mockData: false
+      mockData: false,
+      rateLimiter: rateLimiter.getStatus()
     }
   }
 }

@@ -117,6 +117,17 @@ export default function Layout({ children }) {
           
           <div className="mt-8 pt-8 border-t border-gray-200 dark:border-gray-700 text-center text-gray-600 dark:text-gray-400">
             <p>BZGamers &copy; {new Date().getFullYear()} - All rights reserved</p>
+            <p className="mt-2 text-sm">
+              Game data provided by{' '}
+              <a 
+                href="https://www.igdb.com" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-primary hover:text-primary-dark transition-colors"
+              >
+                IGDB.com
+              </a>
+            </p>
           </div>
         </div>
       </footer>
