@@ -473,11 +473,28 @@ async function getCachedGamesByMood(params) {
     
     // Add genre filter
     if (genres && genres.length > 0) {
-      whereClause.genres = {
-        some: {
-          genre: {
-            name: {
-              in: genres
+      // Check if genres are IDs or names
+      const isNumeric = genres.every(g => typeof g === 'number' || !isNaN(Number(g)))
+      
+      if (isNumeric) {
+        // Use ID-based filtering
+        whereClause.genres = {
+          some: {
+            genre: {
+              igdbId: {
+                in: genres.map(g => Number(g))
+              }
+            }
+          }
+        }
+      } else {
+        // Use name-based filtering
+        whereClause.genres = {
+          some: {
+            genre: {
+              name: {
+                in: genres
+              }
             }
           }
         }
@@ -486,11 +503,28 @@ async function getCachedGamesByMood(params) {
     
     // Add theme filter
     if (themes && themes.length > 0) {
-      whereClause.themes = {
-        some: {
-          theme: {
-            name: {
-              in: themes
+      // Check if themes are IDs or names
+      const isNumeric = themes.every(t => typeof t === 'number' || !isNaN(Number(t)))
+      
+      if (isNumeric) {
+        // Use ID-based filtering
+        whereClause.themes = {
+          some: {
+            theme: {
+              igdbId: {
+                in: themes.map(t => Number(t))
+              }
+            }
+          }
+        }
+      } else {
+        // Use name-based filtering
+        whereClause.themes = {
+          some: {
+            theme: {
+              name: {
+                in: themes
+              }
             }
           }
         }
@@ -499,11 +533,28 @@ async function getCachedGamesByMood(params) {
     
     // Add platform filter
     if (platforms && platforms.length > 0) {
-      whereClause.platforms = {
-        some: {
-          platform: {
-            name: {
-              in: platforms
+      // Check if platforms are IDs or names
+      const isNumeric = platforms.every(p => typeof p === 'number' || !isNaN(Number(p)))
+      
+      if (isNumeric) {
+        // Use ID-based filtering
+        whereClause.platforms = {
+          some: {
+            platform: {
+              igdbId: {
+                in: platforms.map(p => Number(p))
+              }
+            }
+          }
+        }
+      } else {
+        // Use name-based filtering
+        whereClause.platforms = {
+          some: {
+            platform: {
+              name: {
+                in: platforms
+              }
             }
           }
         }
@@ -513,7 +564,7 @@ async function getCachedGamesByMood(params) {
     // Add rating filter
     if (minRating) {
       whereClause.rating = {
-        gte: minRating
+        gte: Number(minRating)
       }
     }
     

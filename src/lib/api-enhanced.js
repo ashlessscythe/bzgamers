@@ -334,8 +334,34 @@ async function searchGames(searchQuery, options = {}) {
  * @param {string|number} filters.genre - Preferred genre ID or name
  * @returns {Promise<Array>} - Filtered games
  */
-async function findGamesByMood({ mood, timeAvailable, genre }) {
-  console.log(`\n[FIND_GAMES_BY_MOOD] Called with:`, { mood, timeAvailable, genre })
+async function findGamesByMood({ 
+  mood, 
+  timeAvailable, 
+  genre,
+  platforms = [],
+  releaseYearStart,
+  releaseYearEnd,
+  minRating,
+  maxRating,
+  themes = [],
+  sortBy = 'total_rating',
+  sortOrder = 'desc',
+  limit = 12
+}) {
+  console.log(`\n[FIND_GAMES_BY_MOOD] Called with:`, { 
+    mood, 
+    timeAvailable, 
+    genre, 
+    platforms, 
+    releaseYearStart, 
+    releaseYearEnd, 
+    minRating, 
+    maxRating, 
+    themes, 
+    sortBy, 
+    sortOrder, 
+    limit 
+  })
   
   // If using mock data, use the mock filtering function
   if (USE_MOCK_DATA) {
@@ -343,8 +369,30 @@ async function findGamesByMood({ mood, timeAvailable, genre }) {
     return filterGamesByMood(mood, timeAvailable, genre)
   }
   
+  // Create a simplified cache key for better hit rates
+  const hasAdvancedFilters = platforms.length > 0 || releaseYearStart || releaseYearEnd || minRating || maxRating || themes.length > 0
+  const cacheKey = hasAdvancedFilters ? {
+    type: 'advanced_filter',
+    mood,
+    timeAvailable,
+    genre,
+    platforms: platforms.map(p => p.id || p),
+    releaseYearStart,
+    releaseYearEnd,
+    minRating,
+    maxRating,
+    themes: themes.map(t => t.id || t),
+    sortBy,
+    sortOrder,
+    limit
+  } : {
+    type: 'mood_search',
+    mood,
+    timeAvailable,
+    genre
+  }
+  
   // Check database cache first
-  const cacheKey = { type: 'mood_search', mood, timeAvailable, genre }
   const cachedResults = await dbCache.getCachedSearch(cacheKey)
   
   if (cachedResults) {
@@ -352,16 +400,23 @@ async function findGamesByMood({ mood, timeAvailable, genre }) {
     return cachedResults
   }
   
-  // Try to get results from cached games in database
-  const cachedGames = await dbCache.getCachedGamesByMood({ 
-    genres: genre ? [genre] : undefined,
-    themes: mood ? [mood] : undefined
-  })
-  
-  if (cachedGames.length > 0) {
-    console.log(`[DB CACHE HIT] Found ${cachedGames.length} cached games for mood search`)
-    await dbCache.cacheSearch(cacheKey, cachedGames, dbCache.CACHE_TTL.MOOD_RESULTS)
-    return cachedGames
+  // For simple searches, try to get results from cached games in database
+  if (!hasAdvancedFilters) {
+    let cachedGames = []
+    try {
+      cachedGames = await dbCache.getCachedGamesByMood({ 
+        genres: genre ? (Array.isArray(genre) ? genre : [genre]) : undefined,
+        themes: mood ? [mood] : undefined
+      })
+    } catch (error) {
+      console.warn('Database cache query failed, falling back to API:', error.message)
+    }
+    
+    if (cachedGames.length > 0) {
+      console.log(`[DB CACHE HIT] Found ${cachedGames.length} cached games for mood search`)
+      await dbCache.cacheSearch(cacheKey, cachedGames, dbCache.CACHE_TTL.MOOD_RESULTS)
+      return cachedGames
+    }
   }
   
   console.log('[FIND_GAMES_BY_MOOD] Using real IGDB API')
@@ -383,7 +438,7 @@ async function findGamesByMood({ mood, timeAvailable, genre }) {
     long: 'total_rating_count > 0 & total_rating >= 85',
   }
 
-  // Build the where clause
+  // Build the where clause - start with basic filters
   let whereClause = []
   
   // Add mood filter
@@ -411,6 +466,47 @@ async function findGamesByMood({ mood, timeAvailable, genre }) {
     
     whereClause.push(genreFilter)
   }
+
+  // Add platform filter
+  if (platforms && platforms.length > 0) {
+    const platformIds = platforms.map(p => typeof p === 'number' ? p : p.id).join(',')
+    whereClause.push(`platforms = (${platformIds})`)
+  }
+
+  // Add release year range filter
+  if (releaseYearStart || releaseYearEnd) {
+    let dateFilter = ''
+    if (releaseYearStart) {
+      const startTimestamp = Math.floor(new Date(releaseYearStart, 0, 1).getTime() / 1000)
+      dateFilter += `first_release_date >= ${startTimestamp}`
+    }
+    if (releaseYearEnd) {
+      const endTimestamp = Math.floor(new Date(releaseYearEnd, 11, 31).getTime() / 1000)
+      if (dateFilter) dateFilter += ' & '
+      dateFilter += `first_release_date <= ${endTimestamp}`
+    }
+    if (dateFilter) {
+      whereClause.push(`(${dateFilter})`)
+    }
+  }
+
+  // Add rating range filter
+  if (minRating || maxRating) {
+    let ratingFilter = 'total_rating_count > 0'
+    if (minRating) {
+      ratingFilter += ` & total_rating >= ${minRating}`
+    }
+    if (maxRating) {
+      ratingFilter += ` & total_rating <= ${maxRating}`
+    }
+    whereClause.push(`(${ratingFilter})`)
+  }
+
+  // Add themes filter
+  if (themes && themes.length > 0) {
+    const themeIds = themes.map(t => typeof t === 'number' ? t : t.id).join(',')
+    whereClause.push(`themes = (${themeIds})`)
+  }
   
   // Combine all filters with AND
   const where = whereClause.length > 0 
@@ -418,12 +514,18 @@ async function findGamesByMood({ mood, timeAvailable, genre }) {
     : ''
   
   console.log('Generated where clause:', where);
+
+  // Build sort string
+  const sort = `${sortBy} ${sortOrder}`
+  
+  // Use a smaller limit for faster initial results
+  const searchLimit = Math.min(limit, 15)
   
   const results = await fetchGames({
-    limit: 12,
-    fields: 'name,cover.*,first_release_date,total_rating,summary,url,genres.*,themes.*',
+    limit: searchLimit,
+    fields: 'name,cover.*,first_release_date,total_rating,summary,url,genres.*,themes.*,platforms.*',
     where,
-    sort: 'total_rating desc'
+    sort
   })
   
   // Cache the results

@@ -42,28 +42,103 @@ export default function Games() {
   const [genres, setGenres] = useState([])
   const [isLoading, setIsLoading] = useState(false)
   const [results, setResults] = useState([])
+  const [originalResults, setOriginalResults] = useState([]) // Store original results for filtering
   const [error, setError] = useState(null)
   const [showResults, setShowResults] = useState(false)
   const [searchStep, setSearchStep] = useState(1) // 1: Mood, 2: Time, 3: Genre
+  const [isRestoring, setIsRestoring] = useState(false)
+  
+  // Advanced filter state
+  const [advancedFilters, setAdvancedFilters] = useState({
+    platforms: [],
+    releaseYearStart: '',
+    releaseYearEnd: '',
+    minRating: '',
+    maxRating: '',
+    sortBy: 'total_rating',
+    sortOrder: 'desc'
+  })
 
-  // Fetch genres on component mount
+  // Load genres on component mount
   useEffect(() => {
     async function loadGenres() {
       try {
         const response = await fetch('/api/genres')
-        if (!response.ok) {
-          throw new Error('Failed to fetch genres')
+        if (response.ok) {
+          const genresData = await response.json()
+          setGenres(genresData)
         }
-        const genreData = await response.json()
-        setGenres(genreData)
       } catch (err) {
-        console.error('Failed to load genres:', err)
-        setError(getUserFriendlyMessage(err) || 'Failed to load genre data. Please try again later.')
+        console.error('Error loading genres:', err)
+        // Fallback to hardcoded genres if API fails
       }
     }
-    
     loadGenres()
   }, [])
+
+  // Load saved state from localStorage on component mount
+  useEffect(() => {
+    const savedState = localStorage.getItem('bzgamers-search-state')
+    if (savedState) {
+      setIsRestoring(true)
+      try {
+        const parsedState = JSON.parse(savedState)
+        const {
+          selectedMood: savedMood,
+          selectedTime: savedTime,
+          selectedGenre: savedGenre,
+          results: savedResults,
+          originalResults: savedOriginalResults,
+          showResults: savedShowResults,
+          advancedFilters: savedFilters
+        } = parsedState
+
+        // Only restore if we have results to show
+        if (savedShowResults && savedOriginalResults && savedOriginalResults.length > 0) {
+          setSelectedMood(savedMood)
+          setSelectedTime(savedTime)
+          setSelectedGenre(savedGenre)
+          setResults(savedResults || savedOriginalResults)
+          setOriginalResults(savedOriginalResults)
+          setShowResults(true)
+          setAdvancedFilters(savedFilters || {
+            platforms: [],
+            releaseYearStart: '',
+            releaseYearEnd: '',
+            minRating: '',
+            maxRating: '',
+            sortBy: 'total_rating',
+            sortOrder: 'desc'
+          })
+        }
+      } catch (err) {
+        console.error('Error restoring saved state:', err)
+        // Clear corrupted localStorage
+        localStorage.removeItem('bzgamers-search-state')
+      } finally {
+        setIsRestoring(false)
+      }
+    }
+  }, [])
+
+  // Save state to localStorage whenever relevant state changes
+  useEffect(() => {
+    if (showResults && originalResults.length > 0) {
+      const stateToSave = {
+        selectedMood,
+        selectedTime,
+        selectedGenre,
+        results,
+        originalResults,
+        showResults,
+        advancedFilters
+      }
+      localStorage.setItem('bzgamers-search-state', JSON.stringify(stateToSave))
+    } else {
+      // Clear saved state if no results to show
+      localStorage.removeItem('bzgamers-search-state')
+    }
+  }, [selectedMood, selectedTime, selectedGenre, results, originalResults, showResults, advancedFilters])
 
   // Function to handle mood selection and move to next step
   const handleMoodSelect = (mood) => {
@@ -75,6 +150,100 @@ export default function Games() {
   const handleTimeSelect = (time) => {
     setSelectedTime(time)
     setSearchStep(3) // Move to genre selection
+  }
+
+  // Function to handle advanced filter changes
+  const handleFiltersChange = async (newFilters) => {
+    setAdvancedFilters(newFilters)
+    
+    // If we have original results, filter them client-side
+    if (originalResults.length > 0) {
+      // Clear any existing timeout
+      if (window.filterTimeout) {
+        clearTimeout(window.filterTimeout)
+      }
+      
+      // Set a new timeout to debounce the filter application
+      window.filterTimeout = setTimeout(() => {
+        applyClientSideFilters(newFilters)
+      }, 300) // 300ms delay
+    }
+  }
+
+  // Function to apply filters client-side
+  const applyClientSideFilters = (filters) => {
+    setIsLoading(true)
+    
+    // Use the original results for filtering
+    const resultsToFilter = originalResults.length > 0 ? originalResults : results
+    
+    // Apply filters to the results
+    let filteredResults = resultsToFilter.filter(game => {
+      // Platform filter
+      if (filters.platforms.length > 0) {
+        const gamePlatforms = game.platforms || []
+        const hasMatchingPlatform = filters.platforms.some(filterPlatform => 
+          gamePlatforms.some(gamePlatform => 
+            gamePlatform.id === (filterPlatform.id || filterPlatform)
+          )
+        )
+        if (!hasMatchingPlatform) return false
+      }
+      
+      // Release year filter
+      if (filters.releaseYearStart || filters.releaseYearEnd) {
+        const gameYear = game.first_release_date ? new Date(game.first_release_date * 1000).getFullYear() : null
+        if (gameYear) {
+          if (filters.releaseYearStart && gameYear < parseInt(filters.releaseYearStart)) return false
+          if (filters.releaseYearEnd && gameYear > parseInt(filters.releaseYearEnd)) return false
+        }
+      }
+      
+      // Rating filter
+      if (filters.minRating || filters.maxRating) {
+        const gameRating = game.total_rating
+        if (gameRating) {
+          if (filters.minRating && gameRating < parseFloat(filters.minRating)) return false
+          if (filters.maxRating && gameRating > parseFloat(filters.maxRating)) return false
+        }
+      }
+      
+      return true
+    })
+    
+    // Apply sorting
+    if (filters.sortBy && filters.sortOrder) {
+      filteredResults.sort((a, b) => {
+        let aValue, bValue
+        
+        switch (filters.sortBy) {
+          case 'total_rating':
+            aValue = a.total_rating || 0
+            bValue = b.total_rating || 0
+            break
+          case 'first_release_date':
+            aValue = a.first_release_date || 0
+            bValue = b.first_release_date || 0
+            break
+          case 'name':
+            aValue = a.name || ''
+            bValue = b.name || ''
+            break
+          default:
+            aValue = a.total_rating || 0
+            bValue = b.total_rating || 0
+        }
+        
+        if (filters.sortOrder === 'asc') {
+          return aValue > bValue ? 1 : -1
+        } else {
+          return aValue < bValue ? 1 : -1
+        }
+      })
+    }
+    
+    setResults(filteredResults)
+    setIsLoading(false)
   }
 
   // Function to handle search
@@ -109,6 +278,7 @@ export default function Games() {
         genreParam = genreMapping[selectedGenre] || selectedGenre;
       }
       
+      // Use simple search first - no advanced filters
       const params = {
         mood: selectedMood ? MOOD_MAP[selectedMood] : null,
         timeAvailable: selectedTime ? TIME_MAP[selectedTime] : null,
@@ -130,6 +300,7 @@ export default function Games() {
       const gameResults = await response.json()
       console.log('Game results:', gameResults)
       setResults(gameResults)
+      setOriginalResults(gameResults)
       setShowResults(true)
     } catch (err) {
       console.error('Error finding games:', err)
@@ -145,9 +316,87 @@ export default function Games() {
     setSelectedTime(null)
     setSelectedGenre(null)
     setResults([])
+    setOriginalResults([])
     setShowResults(false)
     setError(null)
     setSearchStep(1) // Reset to first step
+    setAdvancedFilters({
+      platforms: [],
+      releaseYearStart: '',
+      releaseYearEnd: '',
+      minRating: '',
+      maxRating: '',
+      sortBy: 'total_rating',
+      sortOrder: 'desc'
+    })
+    // Clear saved state from localStorage
+    localStorage.removeItem('bzgamers-search-state')
+  }
+
+  // Function to load more results
+  const handleLoadMore = async () => {
+    if (!selectedMood && !selectedTime && !selectedGenre) {
+      return
+    }
+    
+    setIsLoading(true)
+    
+    try {
+      // If selectedGenre is a string (from the fallback list), map it to the appropriate genre ID or name
+      let genreParam = selectedGenre;
+      
+      // Map hardcoded genre names to appropriate IGDB genre IDs
+      if (typeof selectedGenre === 'string') {
+        const genreMapping = {
+          'Action': 25,
+          'Adventure': 31,
+          'RPG': 12,
+          'Strategy': 15,
+          'Simulation': 13,
+          'Sports': 14,
+          'Puzzle': 9,
+          'Indie': 32,
+          'Shooter': 5
+        };
+        
+        genreParam = genreMapping[selectedGenre] || selectedGenre;
+      }
+      
+      const params = {
+        mood: selectedMood ? MOOD_MAP[selectedMood] : null,
+        timeAvailable: selectedTime ? TIME_MAP[selectedTime] : null,
+        genre: genreParam,
+        offset: originalResults.length // Start from where we left off
+      }
+      
+      const response = await fetch('/api/games-by-mood', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(params)
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to load more games')
+      }
+      
+      const additionalResults = await response.json()
+      console.log('Additional results:', additionalResults)
+      
+      // Add new results to both arrays
+      const newOriginalResults = [...originalResults, ...additionalResults]
+      setOriginalResults(newOriginalResults)
+      
+      // Apply current filters to the new combined results
+      applyClientSideFilters(advancedFilters)
+      
+    } catch (err) {
+      console.error('Error loading more games:', err)
+      setError(getUserFriendlyMessage(err) || 'Failed to load more games. Please try again later.')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   // Animation variants for the page container
@@ -174,6 +423,53 @@ export default function Games() {
     }
   }
 
+  // Function to extract available platforms from results
+  const getAvailablePlatforms = (gameResults) => {
+    console.log('Extracting platforms from results:', gameResults.length, 'games')
+    
+    const platformMap = new Map()
+    
+    gameResults.forEach((game, index) => {
+      console.log(`Game ${index + 1}: ${game.name} - platforms:`, game.platforms)
+      
+      if (game.platforms && Array.isArray(game.platforms)) {
+        game.platforms.forEach(platform => {
+          if (platform.id && platform.name) {
+            platformMap.set(platform.id, platform)
+            console.log(`Found platform: ${platform.name} (ID: ${platform.id})`)
+          }
+        })
+      }
+    })
+    
+    const platforms = Array.from(platformMap.values()).sort((a, b) => a.name.localeCompare(b.name))
+    console.log('Final available platforms:', platforms)
+    
+    return platforms
+  }
+
+  // Function to extract available years from results
+  const getAvailableYears = (gameResults) => {
+    console.log('Extracting years from results:', gameResults.length, 'games')
+    
+    const yearSet = new Set()
+    
+    gameResults.forEach((game, index) => {
+      console.log(`Game ${index + 1}: ${game.name} - release date:`, game.first_release_date)
+      
+      if (game.first_release_date) {
+        const year = new Date(game.first_release_date * 1000).getFullYear()
+        yearSet.add(year)
+        console.log(`Found year: ${year}`)
+      }
+    })
+    
+    const years = Array.from(yearSet).sort((a, b) => b - a) // Sort descending (newest first)
+    console.log('Final available years:', years)
+    
+    return years
+  }
+
   return (
     <div className="py-8">
       <motion.div
@@ -190,151 +486,169 @@ export default function Games() {
           </p>
         </motion.div>
 
-        <motion.div 
-          className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 mb-8"
-          variants={itemVariants}
-        >
-          {error && (
-            <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-              <p className="text-red-700 dark:text-red-400">{error}</p>
+        {/* Loading state for restoring saved results */}
+        {isRestoring && (
+          <motion.div 
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 mb-8"
+            variants={itemVariants}
+          >
+            <div className="flex flex-col items-center justify-center py-12">
+              <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4"></div>
+              <p className="text-lg">Restoring your previous search...</p>
             </div>
-          )}
+          </motion.div>
+        )}
 
-          {!showResults ? (
-            <div>
-              {/* Step 1: Mood Selection */}
-              {searchStep === 1 && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <h2 className="text-2xl font-bold mb-6">How are you feeling today?</h2>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {MOOD_OPTIONS.map((mood) => (
-                      <button
-                        key={mood}
-                        onClick={() => handleMoodSelect(mood)}
-                        className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-primary/10 dark:hover:bg-primary/20 hover:border-primary transition-all border-2 border-transparent"
-                      >
-                        <span className="font-medium">{mood}</span>
-                      </button>
-                    ))}
-                  </div>
-                </motion.div>
-              )}
-
-              {/* Step 2: Time Selection */}
-              {searchStep === 2 && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <h2 className="text-2xl font-bold mb-6">How much time do you have?</h2>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {TIME_OPTIONS.map((time) => (
-                      <button
-                        key={time}
-                        onClick={() => handleTimeSelect(time)}
-                        className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-primary/10 dark:hover:bg-primary/20 hover:border-primary transition-all border-2 border-transparent"
-                      >
-                        <span className="font-medium">{time}</span>
-                      </button>
-                    ))}
-                  </div>
-                  <button
-                    onClick={() => setSearchStep(1)}
-                    className="mt-4 text-primary hover:text-primary-dark transition-colors"
-                  >
-                    ← Back to mood selection
-                  </button>
-                </motion.div>
-              )}
-
-              {/* Step 3: Genre Selection */}
-              {searchStep === 3 && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <h2 className="text-2xl font-bold mb-6">What genre interests you? (Optional)</h2>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
-                    {genres.length > 0 ? (
-                      genres.map((genre) => (
-                        <button
-                          key={genre.id}
-                          onClick={() => setSelectedGenre(genre.id)}
-                          className={`p-4 rounded-lg transition-all border-2 ${
-                            selectedGenre === genre.id
-                              ? 'bg-primary/20 border-primary'
-                              : 'bg-gray-50 dark:bg-gray-700 border-transparent hover:bg-primary/10 dark:hover:bg-primary/20 hover:border-primary'
-                          }`}
-                        >
-                          <span className="font-medium">{genre.name}</span>
-                        </button>
-                      ))
-                    ) : (
-                      // Fallback genre list if API fails
-                      ['Action', 'Adventure', 'RPG', 'Strategy', 'Simulation', 'Sports', 'Puzzle', 'Indie', 'Shooter'].map((genre) => (
-                        <button
-                          key={genre}
-                          onClick={() => setSelectedGenre(genre)}
-                          className={`p-4 rounded-lg transition-all border-2 ${
-                            selectedGenre === genre
-                              ? 'bg-primary/20 border-primary'
-                              : 'bg-gray-50 dark:bg-gray-700 border-transparent hover:bg-primary/10 dark:hover:bg-primary/20 hover:border-primary'
-                          }`}
-                        >
-                          <span className="font-medium">{genre}</span>
-                        </button>
-                      ))
-                    )}
-                  </div>
-                  
-                  <div className="flex flex-col sm:flex-row gap-4">
-                    <button
-                      onClick={() => setSearchStep(2)}
-                      className="text-primary hover:text-primary-dark transition-colors"
-                    >
-                      ← Back to time selection
-                    </button>
-                    <button
-                      onClick={handleSearch}
-                      disabled={isLoading}
-                      className="btn-primary px-8 py-3 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {isLoading ? 'Finding games...' : 'Find Games'}
-                    </button>
-                  </div>
-                </motion.div>
-              )}
-            </div>
-          ) : (
-            <div>
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold">Your Game Recommendations</h2>
-                <button
-                  onClick={handleReset}
-                  className="text-primary hover:text-primary-dark transition-colors"
-                >
-                  Start Over
-                </button>
+        {!isRestoring && (
+          <motion.div 
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 mb-8"
+            variants={itemVariants}
+          >
+            {error && (
+              <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                <p className="text-red-700 dark:text-red-400">{error}</p>
               </div>
-              
-              {results.length > 0 ? (
-                <GameResults results={results} isLoading={isLoading} onBack={handleReset} />
-              ) : (
-                <div className="text-center py-8">
-                  <p className="text-gray-600 dark:text-gray-400">
-                    No games found matching your criteria. Try adjusting your preferences.
-                  </p>
+            )}
+
+            {!showResults ? (
+              <div>
+                {/* Step 1: Mood Selection */}
+                {searchStep === 1 && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <h2 className="text-2xl font-bold mb-6">How are you feeling today?</h2>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      {MOOD_OPTIONS.map((mood) => (
+                        <button
+                          key={mood}
+                          onClick={() => handleMoodSelect(mood)}
+                          className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-primary/10 dark:hover:bg-primary/20 hover:border-primary transition-all border-2 border-transparent"
+                        >
+                          <span className="font-medium">{mood}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* Step 2: Time Selection */}
+                {searchStep === 2 && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <h2 className="text-2xl font-bold mb-6">How much time do you have?</h2>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      {TIME_OPTIONS.map((time) => (
+                        <button
+                          key={time}
+                          onClick={() => handleTimeSelect(time)}
+                          className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-primary/10 dark:hover:bg-primary/20 hover:border-primary transition-all border-2 border-transparent"
+                        >
+                          <span className="font-medium">{time}</span>
+                        </button>
+                      ))}
+                    </div>
+                    <button
+                      onClick={() => setSearchStep(1)}
+                      className="mt-4 text-primary hover:text-primary-dark transition-colors"
+                    >
+                      ← Back to mood selection
+                    </button>
+                  </motion.div>
+                )}
+
+                {/* Step 3: Genre Selection */}
+                {searchStep === 3 && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <h2 className="text-2xl font-bold mb-6">What genre interests you? (Optional)</h2>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+                      {genres.length > 0 ? (
+                        genres.map((genre) => (
+                          <button
+                            key={genre.id}
+                            onClick={() => setSelectedGenre(genre.id)}
+                            className={`p-4 rounded-lg transition-all border-2 ${
+                              selectedGenre === genre.id
+                                ? 'bg-primary/20 border-primary'
+                                : 'bg-gray-50 dark:bg-gray-700 border-transparent hover:bg-primary/10 dark:hover:bg-primary/20 hover:border-primary'
+                            }`}
+                          >
+                            <span className="font-medium">{genre.name}</span>
+                          </button>
+                        ))
+                      ) : (
+                        // Fallback genre list if API fails
+                        ['Action', 'Adventure', 'RPG', 'Strategy', 'Simulation', 'Sports', 'Puzzle', 'Indie', 'Shooter'].map((genre) => (
+                          <button
+                            key={genre}
+                            onClick={() => setSelectedGenre(genre)}
+                            className={`p-4 rounded-lg transition-all border-2 ${
+                              selectedGenre === genre
+                                ? 'bg-primary/20 border-primary'
+                                : 'bg-gray-50 dark:bg-gray-700 border-transparent hover:bg-primary/10 dark:hover:bg-primary/20 hover:border-primary'
+                            }`}
+                          >
+                            <span className="font-medium">{genre}</span>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                    
+                    <div className="flex flex-col sm:flex-row gap-4">
+                      <button
+                        onClick={() => setSearchStep(2)}
+                        className="text-primary hover:text-primary-dark transition-colors"
+                      >
+                        ← Back to time selection
+                      </button>
+                      <button
+                        onClick={handleSearch}
+                        disabled={isLoading}
+                        className="btn-primary px-8 py-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isLoading ? 'Finding games...' : 'Find Games'}
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </div>
+            ) : (
+              <div>
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-2xl font-bold">Your Game Recommendations</h2>
+                  <button
+                    onClick={handleReset}
+                    className="text-primary hover:text-primary-dark transition-colors"
+                  >
+                    Start Over
+                  </button>
                 </div>
-              )}
-            </div>
-          )}
-        </motion.div>
+                
+                <GameResults 
+                  results={results} 
+                  isLoading={isLoading} 
+                  onBack={handleReset}
+                  onFiltersChange={handleFiltersChange}
+                  initialFilters={advancedFilters}
+                  onLoadMore={handleLoadMore}
+                  hasMore={originalResults.length >= 12} // Show load more if we have at least 12 results
+                  availablePlatforms={getAvailablePlatforms(originalResults)}
+                  availableYears={getAvailableYears(originalResults)}
+                  totalResults={originalResults.length}
+                />
+              </div>
+            )}
+          </motion.div>
+        )}
       </motion.div>
     </div>
   )

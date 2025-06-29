@@ -313,8 +313,8 @@ const searchGames = withCache(
  * @returns {Promise<Array>} - Filtered games
  */
 const findGamesByMood = withCache(
-  async function({ mood, timeAvailable, genre }) {
-    console.log(`\n[FIND_GAMES_BY_MOOD] Called with:`, { mood, timeAvailable, genre })
+  async function({ mood, timeAvailable, genre, offset = 0 }) {
+    console.log(`\n[FIND_GAMES_BY_MOOD] Called with:`, { mood, timeAvailable, genre, offset })
     
     // If using mock data, use the mock filtering function
     if (USE_MOCK_DATA) {
@@ -380,13 +380,14 @@ const findGamesByMood = withCache(
     
     return fetchGames({
       limit: 12,
-      fields: 'name,cover.*,first_release_date,total_rating,summary,url,genres.*,themes.*',
+      offset,
+      fields: 'name,cover.*,first_release_date,total_rating,summary,url,genres.*,themes.*,platforms.*',
       where,
       sort: 'total_rating desc'
     })
   },
-  ({ mood, timeAvailable, genre }) => 
-    `${CACHE_KEYS.MOOD_PREFIX}${mood || 'any'}_${timeAvailable || 'any'}_${genre || 'any'}`,
+  ({ mood, timeAvailable, genre, offset = 0 }) => 
+    `${CACHE_KEYS.MOOD_PREFIX}${mood || 'any'}_${timeAvailable || 'any'}_${genre || 'any'}_${offset}`,
   CACHE_TTL.MOOD_RESULTS
 )
 
