@@ -93,6 +93,7 @@ This document outlines the steps needed to complete the BZGamers MVP, organized 
   - [ ] Add logging/alerts for Twitch token failures
 - [ ] Add user-specific features
   - [ ] Create bookmarking functionality
+  - [ ] Encourage signins via favorites
   - [ ] Implement user preferences storage
   - [ ] Add user profile page (basic)
 
@@ -111,6 +112,30 @@ This document outlines the steps needed to complete the BZGamers MVP, organized 
   - [ ] Configure domain (bzgamers.com or similar)
   - [ ] Create deployment documentation
   - [ ] Implement analytics (optional)
+
+## Milestone 7: Gaming Psychology & Mindfulness Features
+- [ ] Create "Mindful Gaming" content section
+  - [ ] Design psychology-focused content layout
+  - [ ] Implement content management system for articles
+  - [ ] Add guest writer submission tools
+  - [ ] Create content categories (dark patterns, backlog psychology, etc.)
+- [ ] Develop psychological gaming insights
+  - [ ] Dark pattern recognition in gaming
+  - [ ] Backlog reframing and management strategies
+  - [ ] Psychology of gaming addiction and healthy habits
+  - [ ] Consumer behavior analysis (buying games to never play)
+  - [ ] Mindfulness techniques for gamers
+- [ ] Build content management tools
+  - [ ] Guest writer registration and submission system
+  - [ ] Content moderation and approval workflow
+  - [ ] Rich text editor for article creation
+  - [ ] Image and media upload capabilities
+  - [ ] Content scheduling and publishing tools
+- [ ] Implement user engagement features
+  - [ ] Article bookmarking and sharing
+  - [ ] Comment system for discussions
+  - [ ] User progress tracking for mindfulness practices
+  - [ ] Community support features
 
 ## Future Features (Post-MVP)
 - [ ] Gamer profile creation
