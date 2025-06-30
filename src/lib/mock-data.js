@@ -5,20 +5,79 @@
  * or when running in development mode without API credentials.
  */
 
-// Mock genres
+// Mock genres - expanded list with realistic IGDB genres
 const MOCK_GENRES = [
-  { id: 1, name: 'Action', slug: 'action' },
-  { id: 2, name: 'Adventure', slug: 'adventure' },
-  { id: 3, name: 'RPG', slug: 'role-playing-game-rpg' },
-  { id: 4, name: 'Strategy', slug: 'strategy' },
+  // Popular/Common genres (most well-known)
   { id: 5, name: 'Shooter', slug: 'shooter' },
-  { id: 6, name: 'Simulation', slug: 'simulation' },
-  { id: 7, name: 'Sports', slug: 'sports' },
-  { id: 8, name: 'Puzzle', slug: 'puzzle' },
-  { id: 9, name: 'Indie', slug: 'indie' },
+  { id: 12, name: 'Role-playing (RPG)', slug: 'role-playing-rpg' },
+  { id: 15, name: 'Strategy', slug: 'strategy' },
+  { id: 31, name: 'Adventure', slug: 'adventure' },
+  { id: 32, name: 'Indie', slug: 'indie' },
+  { id: 13, name: 'Simulator', slug: 'simulator' },
+  { id: 14, name: 'Sport', slug: 'sport' },
+  { id: 9, name: 'Puzzle', slug: 'puzzle' },
   { id: 10, name: 'Racing', slug: 'racing' },
-  { id: 11, name: 'Fighting', slug: 'fighting' },
-  { id: 12, name: 'Platform', slug: 'platform' }
+  { id: 4, name: 'Fighting', slug: 'fighting' },
+  { id: 8, name: 'Platform', slug: 'platform' },
+  { id: 25, name: 'Hack and slash/Beat \'em up', slug: 'hack-and-slash-beat-em-up' },
+  
+  // Additional genres (more specialized)
+  { id: 33, name: 'Arcade', slug: 'arcade' },
+  { id: 35, name: 'Card & Board Game', slug: 'card-and-board-game' },
+  { id: 36, name: 'MOBA', slug: 'moba' },
+  { id: 7, name: 'Music', slug: 'music' },
+  { id: 30, name: 'Pinball', slug: 'pinball' },
+  { id: 16, name: 'Turn-based strategy (TBS)', slug: 'turn-based-strategy-tbs' },
+  { id: 24, name: 'Tactical', slug: 'tactical' },
+  { id: 26, name: 'Quiz/Trivia', slug: 'quiz-trivia' },
+  { id: 27, name: 'Real Time Strategy (RTS)', slug: 'real-time-strategy-rts' },
+  { id: 28, name: 'Hack and slash', slug: 'hack-and-slash' },
+  { id: 29, name: 'Point-and-click', slug: 'point-and-click' },
+  { id: 34, name: 'Visual Novel', slug: 'visual-novel' },
+  { id: 37, name: 'Battle Royale', slug: 'battle-royale' },
+  { id: 38, name: 'Survival', slug: 'survival' },
+  { id: 39, name: 'Horror', slug: 'horror' },
+  { id: 40, name: 'Stealth', slug: 'stealth' },
+  { id: 41, name: 'Sandbox', slug: 'sandbox' },
+  { id: 42, name: 'Open world', slug: 'open-world' },
+  { id: 43, name: 'Metroidvania', slug: 'metroidvania' },
+  { id: 44, name: 'Roguelike', slug: 'roguelike' },
+  { id: 45, name: 'Roguelite', slug: 'roguelite' },
+  { id: 46, name: 'Souls-like', slug: 'souls-like' },
+  { id: 47, name: 'Tower Defense', slug: 'tower-defense' },
+  { id: 48, name: 'Idle', slug: 'idle' },
+  { id: 49, name: 'Incremental', slug: 'incremental' },
+  { id: 50, name: 'Walking Simulator', slug: 'walking-simulator' },
+  { id: 51, name: 'Life Simulation', slug: 'life-simulation' },
+  { id: 52, name: 'Business Simulation', slug: 'business-simulation' },
+  { id: 53, name: 'Flight Simulator', slug: 'flight-simulator' },
+  { id: 54, name: 'Driving Simulator', slug: 'driving-simulator' },
+  { id: 55, name: 'Farming Simulator', slug: 'farming-simulator' },
+  { id: 56, name: 'City Builder', slug: 'city-builder' },
+  { id: 57, name: '4X', slug: '4x' },
+  { id: 58, name: 'Grand Strategy', slug: 'grand-strategy' },
+  { id: 59, name: 'Wargame', slug: 'wargame' },
+  { id: 60, name: 'Artillery', slug: 'artillery' },
+  { id: 61, name: 'Auto Battler', slug: 'auto-battler' },
+  { id: 62, name: 'Bullet Hell', slug: 'bullet-hell' },
+  { id: 63, name: 'Dungeon Crawler', slug: 'dungeon-crawler' },
+  { id: 64, name: 'Immersive Sim', slug: 'immersive-sim' },
+  { id: 65, name: 'Interactive Fiction', slug: 'interactive-fiction' },
+  { id: 66, name: 'Light Gun', slug: 'light-gun' },
+  { id: 67, name: 'Management', slug: 'management' },
+  { id: 68, name: 'Party', slug: 'party' },
+  { id: 69, name: 'Pinball', slug: 'pinball' },
+  { id: 70, name: 'Programming', slug: 'programming' },
+  { id: 71, name: 'Rhythm', slug: 'rhythm' },
+  { id: 72, name: 'Shoot \'em up', slug: 'shoot-em-up' },
+  { id: 73, name: 'Space Flight', slug: 'space-flight' },
+  { id: 74, name: 'Text-based', slug: 'text-based' },
+  { id: 75, name: 'Third Person', slug: 'third-person' },
+  { id: 76, name: 'Top-down', slug: 'top-down' },
+  { id: 77, name: 'Twin Stick Shooter', slug: 'twin-stick-shooter' },
+  { id: 78, name: 'Vehicular Combat', slug: 'vehicular-combat' },
+  { id: 79, name: 'Visual Novel', slug: 'visual-novel' },
+  { id: 80, name: 'Word Game', slug: 'word-game' }
 ];
 
 // Mock games
@@ -217,7 +276,7 @@ const MOCK_GAMES = [
 ];
 
 // Filter games by mood
-function filterGamesByMood(mood, timeAvailable, genre) {
+function filterGamesByMood(mood, timeAvailable, genre, offset = 0, limit = 12) {
   let filteredGames = [...MOCK_GAMES];
   
   // Filter by mood
@@ -286,7 +345,10 @@ function filterGamesByMood(mood, timeAvailable, genre) {
     }
   }
   
-  return filteredGames;
+  // Apply pagination
+  const startIndex = offset;
+  const endIndex = startIndex + limit;
+  return filteredGames.slice(startIndex, endIndex);
 }
 
 module.exports = {

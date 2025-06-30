@@ -38,11 +38,11 @@ This document outlines the steps needed to complete the BZGamers MVP, organized 
   - [x] Create mood selection component
   - [x] Implement time availability selector
   - [x] Add genre preference options
-- [ ] Enhance mood and genre selection interface
-  - [ ] Expand mood selection with "See All" option for esoteric tastes
-  - [ ] Expand genre selection with "Advanced" toggle for more options
-  - [ ] Keep basic/common moods and genres immediately visible
-  - [ ] Implement collapsible advanced sections
+- [x] Enhance mood and genre selection interface
+  - [x] Expand mood selection with "See All" option for esoteric tastes
+  - [x] Expand genre selection with "Advanced" toggle for more options
+  - [x] Keep basic/common moods and genres immediately visible
+  - [x] Implement collapsible advanced sections
 - [x] Implement API integration
   - [x] Create API service for game data
   - [x] Implement caching strategy

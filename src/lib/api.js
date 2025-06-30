@@ -319,7 +319,7 @@ const findGamesByMood = withCache(
     // If using mock data, use the mock filtering function
     if (USE_MOCK_DATA) {
       console.log('[FIND_GAMES_BY_MOOD] Using mock data')
-      return filterGamesByMood(mood, timeAvailable, genre)
+      return filterGamesByMood(mood, timeAvailable, genre, offset, 12)
     }
     
     console.log('[FIND_GAMES_BY_MOOD] Using real IGDB API')
@@ -387,7 +387,9 @@ const findGamesByMood = withCache(
     })
   },
   ({ mood, timeAvailable, genre, offset = 0 }) => 
-    `${CACHE_KEYS.MOOD_PREFIX}${mood || 'any'}_${timeAvailable || 'any'}_${genre || 'any'}_${offset}`,
+    offset === 0 
+      ? `${CACHE_KEYS.MOOD_PREFIX}${mood || 'any'}_${timeAvailable || 'any'}_${genre || 'any'}`
+      : `${CACHE_KEYS.MOOD_PREFIX}${mood || 'any'}_${timeAvailable || 'any'}_${genre || 'any'}_${offset}`,
   CACHE_TTL.MOOD_RESULTS
 )
 
@@ -401,7 +403,7 @@ const fetchGenres = withCache(
     if (USE_MOCK_DATA) {
       return MOCK_GENRES
     }
-    return igdbRequest('genres', 'fields id,name,slug; sort name asc;')
+    return igdbRequest('genres', 'fields id,name,slug; sort name asc; limit 100;')
   },
   () => CACHE_KEYS.GENRES,
   CACHE_TTL.GENRES
@@ -413,7 +415,7 @@ const fetchGenres = withCache(
  */
 const fetchThemes = withCache(
   async function() {
-    return igdbRequest('themes', 'fields id,name,slug; sort name asc;')
+    return igdbRequest('themes', 'fields id,name,slug; sort name asc; limit 100;')
   },
   () => CACHE_KEYS.THEMES,
   CACHE_TTL.THEMES

@@ -10,20 +10,24 @@ import { getCachedSearch, cacheSearch } from '../../../lib/db-cache'
 
 export async function POST(request) {
   try {
-    const { mood, timeAvailable, genre } = await request.json()
-    const params = { mood, timeAvailable, genre }
+    const { mood, timeAvailable, genre, offset = 0 } = await request.json()
+    const params = { mood, timeAvailable, genre, offset }
 
-    // 1. Try to get cached results
-    const cached = await getCachedSearch(params)
-    if (cached) {
-      return Response.json(cached)
+    // 1. Try to get cached results (only for first page)
+    if (offset === 0) {
+      const cached = await getCachedSearch({ mood, timeAvailable, genre })
+      if (cached) {
+        return Response.json(cached)
+      }
     }
 
-    // 2. If not cached, fetch from IGDB
+    // 2. Fetch from IGDB with offset
     const games = await findGamesByMood(params)
 
-    // 3. Cache the results
-    await cacheSearch(params, games)
+    // 3. Cache the results (only for first page)
+    if (offset === 0) {
+      await cacheSearch({ mood, timeAvailable, genre }, games)
+    }
 
     return Response.json(games)
   } catch (error) {
