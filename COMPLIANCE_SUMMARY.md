@@ -88,7 +88,7 @@
 ## Contact Information
 
 **Developer:** Tony  
-**Email:** partner-igdb@justin.tv  
+**Email:** drakesav@gmail.com  
 **Application:** BZGamers  
 **IGDB Contact:** partner@igdb.com
 
