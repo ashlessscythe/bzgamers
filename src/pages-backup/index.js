@@ -103,7 +103,7 @@ export default function Home() {
             </div>
             <h2 className="text-xl font-bold mb-2">Find Your Perfect Game</h2>
             <p className="text-gray-600 dark:text-gray-400 mb-4">Discover games that match your current mood, available time, and preferences.</p>
-            <Link href="/games" legacyBehavior>
+            <Link href="/games">
               <motion.a 
                 className="btn-primary text-lg py-3 px-8 w-full"
                 variants={buttonVariants}
