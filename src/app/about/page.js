@@ -36,7 +36,20 @@ export default function About() {
         animate="visible"
       >
         <motion.div variants={itemVariants}>
-          <h1 className="text-3xl md:text-4xl font-bold mb-6">About BZGamers</h1>
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+            <h1 className="text-3xl md:text-4xl font-bold">About BZGamers</h1>
+            <a 
+              href="https://buymeacoffee.com/tonyagua" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="inline-flex items-center px-6 py-3 bg-yellow-500 hover:bg-yellow-600 text-black font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 mt-4 md:mt-0"
+            >
+              <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M18 8V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v2a5 5 0 0 0 4 4.9V15a3 3 0 0 0 6 0v-2.1A5 5 0 0 0 18 8zm-2 0a3 3 0 0 1-6 0V6h6zm-3 11a1 1 0 0 1-1-1h2a1 1 0 0 1-1 1zm7-7a1 1 0 0 1 0 2h-1v2a7 7 0 0 1-14 0v-2H3a1 1 0 0 1 0-2h16z"/>
+              </svg>
+              Buy me a coffee
+            </a>
+          </div>
         </motion.div>
 
         <motion.div 

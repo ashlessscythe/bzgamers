@@ -155,6 +155,7 @@ Traditional game recommendation engines focus on **what you like**, but BZGamers
 - **Issues**: [GitHub Issues](https://github.com/yourusername/bzgamers/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/yourusername/bzgamers/discussions)
 - **Email**: hello@bzgamers.com
+- **Buy Me a Coffee**: [https://buymeacoffee.com/tonyagua](https://buymeacoffee.com/tonyagua)
 
 ## 📄 License
 
