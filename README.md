@@ -165,3 +165,16 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 **Made with ❤️ for the gaming community**
 
 *BZGamers - Because your mood matters more than your genre preferences.*
+
+## Routing
+
+This project uses the **Next.js App Router** (see `src/app/`). The legacy Pages Router code is preserved in `src/pages-backup/` for reference.
+
+## Environment Variables
+
+Environment variables are managed via a `.env` file. A template is provided in `.env.example`. Be sure to copy `.env.example` to `.env` and fill in your own values before running the project.
+
+- `NEXT_PUBLIC_SITE_NAME`: The name of the site (used in UI and metadata)
+- `NEXT_PUBLIC_GH_URL`: The GitHub repository URL (used in UI)
+
+---

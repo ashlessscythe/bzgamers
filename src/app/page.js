@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion'
 import Link from 'next/link'
+import { SITE_NAME, GH_URL } from '../lib/config'
 
 export default function Home() {
   // Animation variants
@@ -61,7 +62,7 @@ export default function Home() {
             }}
           >
             <h1 className="text-5xl md:text-7xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary">
-              BZGamers
+              {SITE_NAME}
             </h1>
           </motion.div>
           
@@ -78,6 +79,9 @@ export default function Home() {
           >
             Find the perfect game for your current mood, available time, and preferences. 
             Connect with like-minded gamers and discover new experiences.
+          </motion.p>
+          <motion.p className="mt-4 text-sm text-gray-500 dark:text-gray-400" variants={itemVariants}>
+            <a href={GH_URL} target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">GitHub</a>
           </motion.p>
         </motion.div>
 

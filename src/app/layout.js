@@ -1,10 +1,11 @@
 import '../styles/globals.css'
 import Layout from '../components/Layout'
+import { SITE_NAME } from '../lib/config'
 
 export const metadata = {
   title: {
-    default: 'BZGamers - Where the bz go to chill and play',
-    template: '%s - BZGamers'
+    default: SITE_NAME,
+    template: `%s - ${SITE_NAME}`
   },
   description: 'Find games that match your mood and connect with like-minded gamers',
   icons: {
