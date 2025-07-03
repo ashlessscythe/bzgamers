@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import GameResults from '../../components/GameResults'
+import GoToTopButton from '../../components/GoToTopButton'
 import { getUserFriendlyMessage } from '../../lib/error-handler'
 
 // Available mood options - common ones first
@@ -86,6 +87,10 @@ export default function Games() {
   // State for expanded options
   const [showAllMoods, setShowAllMoods] = useState(false)
   const [showAdvancedGenres, setShowAdvancedGenres] = useState(false)
+  
+  // State for loading more results and scroll position
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
+  const [scrollPosition, setScrollPosition] = useState(0)
   
   // Advanced filter state
   const [advancedFilters, setAdvancedFilters] = useState({
@@ -184,6 +189,25 @@ export default function Games() {
       localStorage.removeItem('bzgamers-search-state')
     }
   }, [selectedMood, selectedTime, selectedGenre, results, originalResults, showResults, advancedFilters, showAllMoods, showAdvancedGenres])
+
+  // Restore scroll position after loading more results
+  useEffect(() => {
+    if (!isLoadingMore && scrollPosition > 0) {
+      // Use requestAnimationFrame to ensure DOM is updated
+      requestAnimationFrame(() => {
+        // Smooth scroll to the position with a subtle animation
+        window.scrollTo({
+          top: scrollPosition,
+          behavior: 'smooth'
+        })
+        
+        // Reset after restoring
+        setTimeout(() => {
+          setScrollPosition(0)
+        }, 500) // Wait for scroll animation to complete
+      })
+    }
+  }, [isLoadingMore, scrollPosition])
 
   // Function to handle mood selection and move to next step
   const handleMoodSelect = (mood) => {
@@ -386,6 +410,9 @@ export default function Games() {
       return
     }
     
+    // Store current scroll position
+    setScrollPosition(window.scrollY)
+    setIsLoadingMore(true)
     setIsLoading(true)
     
     try {
@@ -504,11 +531,13 @@ export default function Games() {
       }
       
       setResults(filteredResults)
+      
     } catch (err) {
       console.error('Error loading more games:', err)
       setError(getUserFriendlyMessage(err) || 'Failed to load more games. Please try again later.')
     } finally {
       setIsLoading(false)
+      setIsLoadingMore(false)
     }
   }
 
@@ -878,12 +907,28 @@ export default function Games() {
               <div>
                 <div className="flex justify-between items-center mb-6">
                   <h2 className="text-2xl font-bold">Your Game Recommendations</h2>
-                  <button
+                  <motion.button
                     onClick={handleReset}
-                    className="text-primary hover:text-primary-dark transition-colors"
+                    className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-6 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-2 group"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
                   >
+                    <svg 
+                      xmlns="http://www.w3.org/2000/svg" 
+                      className="h-5 w-5 transition-transform group-hover:rotate-180" 
+                      fill="none" 
+                      viewBox="0 0 24 24" 
+                      stroke="currentColor"
+                    >
+                      <path 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round" 
+                        strokeWidth={2} 
+                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" 
+                      />
+                    </svg>
                     Start Over
-                  </button>
+                  </motion.button>
                 </div>
                 
                 {/* Personalized Summary */}
@@ -914,6 +959,9 @@ export default function Games() {
           </motion.div>
         )}
       </motion.div>
+      
+      {/* Floating Go to Top Button */}
+      <GoToTopButton />
     </div>
   )
 } 
