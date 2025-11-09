@@ -1,10 +1,12 @@
 "use client"
 
+import { useState } from 'react'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { useSession, signOut } from 'next-auth/react'
 import ThemeToggle from './ThemeToggle'
 import MobileMenu from './MobileMenu'
+import AuthModal from './AuthModal'
 import { SITE_NAME, GH_URL } from '../lib/config'
 
 /**
@@ -13,7 +15,19 @@ import { SITE_NAME, GH_URL } from '../lib/config'
 export default function Layout({ children }) {
   const pathname = usePathname()
   const { data: session, status } = useSession()
+  const [authModalOpen, setAuthModalOpen] = useState(false)
+  const [authModalMode, setAuthModalMode] = useState('signin')
   const isActive = (path) => pathname === path
+
+  const openSignIn = () => {
+    setAuthModalMode('signin')
+    setAuthModalOpen(true)
+  }
+
+  const openSignUp = () => {
+    setAuthModalMode('signup')
+    setAuthModalOpen(true)
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-white dark:bg-gray-900 transition-colors">
@@ -68,12 +82,20 @@ export default function Layout({ children }) {
                 </button>
               </div>
             ) : (
-              <Link
-                href="/auth/signin"
-                className="text-sm btn-primary px-3 py-1"
-              >
-                Sign In
-              </Link>
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={openSignIn}
+                  className="text-sm btn-secondary px-3 py-1"
+                >
+                  Sign In
+                </button>
+                <button
+                  onClick={openSignUp}
+                  className="text-sm btn-primary px-3 py-1"
+                >
+                  Sign Up
+                </button>
+              </div>
             )}
             <ThemeToggle />
             <MobileMenu />
@@ -172,6 +194,12 @@ export default function Layout({ children }) {
           </div>
         </div>
       </footer>
+
+      <AuthModal 
+        isOpen={authModalOpen} 
+        onClose={() => setAuthModalOpen(false)}
+        initialMode={authModalMode}
+      />
     </div>
   )
 }
