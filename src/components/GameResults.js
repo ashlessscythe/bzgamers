@@ -89,7 +89,7 @@ export default function GameResults({
     initialFilters.releaseYearEnd || 
     initialFilters.minRating || 
     initialFilters.maxRating ||
-    initialFilters.sortBy !== 'total_rating' ||
+    initialFilters.sortBy !== 'first_release_date' ||
     initialFilters.sortOrder !== 'desc'
 
   // Get subtitle text

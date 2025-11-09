@@ -99,7 +99,7 @@ export default function Games() {
     releaseYearEnd: '',
     minRating: '',
     maxRating: '',
-    sortBy: 'total_rating',
+    sortBy: 'first_release_date',
     sortOrder: 'desc'
   })
 
@@ -155,7 +155,7 @@ export default function Games() {
             releaseYearEnd: '',
             minRating: '',
             maxRating: '',
-            sortBy: 'total_rating',
+            sortBy: 'first_release_date',
             sortOrder: 'desc'
           })
         }
@@ -368,8 +368,16 @@ export default function Games() {
       
       const gameResults = await response.json()
       console.log('Game results:', gameResults)
-      setResults(gameResults)
-      setOriginalResults(gameResults)
+      
+      // Apply default sorting (by release date descending)
+      const sortedResults = [...gameResults].sort((a, b) => {
+        const aValue = a.first_release_date || 0
+        const bValue = b.first_release_date || 0
+        return aValue < bValue ? 1 : -1 // Descending order (newest first)
+      })
+      
+      setResults(sortedResults)
+      setOriginalResults(sortedResults)
       setShowResults(true)
     } catch (err) {
       console.error('Error finding games:', err)
@@ -397,7 +405,7 @@ export default function Games() {
       releaseYearEnd: '',
       minRating: '',
       maxRating: '',
-      sortBy: 'total_rating',
+      sortBy: 'first_release_date',
       sortOrder: 'desc'
     })
     // Clear saved state from localStorage

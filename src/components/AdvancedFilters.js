@@ -17,7 +17,7 @@ export default function AdvancedFilters({
     releaseYearEnd: '',
     minRating: '',
     maxRating: '',
-    sortBy: 'total_rating',
+    sortBy: 'first_release_date',
     sortOrder: 'desc',
     ...initialFilters
   })
@@ -56,7 +56,7 @@ export default function AdvancedFilters({
       releaseYearEnd: '',
       minRating: '',
       maxRating: '',
-      sortBy: 'total_rating',
+      sortBy: 'first_release_date',
       sortOrder: 'desc'
     }
     setFilters(clearedFilters)
@@ -69,7 +69,7 @@ export default function AdvancedFilters({
     filters.releaseYearEnd || 
     filters.minRating || 
     filters.maxRating ||
-    filters.sortBy !== 'total_rating' ||
+    filters.sortBy !== 'first_release_date' ||
     filters.sortOrder !== 'desc'
 
   return (
