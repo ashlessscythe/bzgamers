@@ -1,17 +1,31 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { signIn } from 'next-auth/react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 export default function AuthModal({ isOpen, onClose, initialMode = 'signin' }) {
   const [mode, setMode] = useState(initialMode) // 'signin' or 'signup'
+  
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [name, setName] = useState('')
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [success, setSuccess] = useState(false)
+  
+  // Update mode when initialMode changes (e.g., when switching between signin/signup buttons)
+  useEffect(() => {
+    if (isOpen) {
+      setMode(initialMode)
+      // Reset form when mode changes
+      setEmail('')
+      setPassword('')
+      setName('')
+      setError('')
+      setSuccess(false)
+    }
+  }, [initialMode, isOpen])
 
   const handleSignIn = async (e) => {
     e.preventDefault()

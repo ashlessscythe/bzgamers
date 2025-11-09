@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useSession } from 'next-auth/react'
 
 /**
  * Mobile menu component for navigation on smaller screens
@@ -10,6 +11,7 @@ import { usePathname } from 'next/navigation'
 export default function MobileMenu() {
   const [isOpen, setIsOpen] = useState(false)
   const pathname = usePathname()
+  const { data: session } = useSession()
   
   // Close the menu when route changes
   useEffect(() => {
@@ -38,7 +40,9 @@ export default function MobileMenu() {
   const navItems = [
     { path: '/', label: 'Home' },
     { path: '/games', label: 'Find Games' },
-    { path: '/about', label: 'About' }
+    { path: '/about', label: 'About' },
+    // Add Admin link if user is admin
+    ...(session?.user?.role === 'ADMIN' ? [{ path: '/admin', label: 'Admin' }] : [])
   ]
 
   return (
