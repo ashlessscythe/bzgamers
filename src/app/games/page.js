@@ -72,6 +72,7 @@ const TIME_MAP = {
 
 export default function Games() {
   // State for selected options
+  const [searchMode, setSearchMode] = useState(null) // 'mood' or 'similar'
   const [selectedMood, setSelectedMood] = useState(null)
   const [selectedTime, setSelectedTime] = useState(null)
   const [selectedGenre, setSelectedGenre] = useState(null)
@@ -81,8 +82,14 @@ export default function Games() {
   const [originalResults, setOriginalResults] = useState([]) // Store original results for filtering
   const [error, setError] = useState(null)
   const [showResults, setShowResults] = useState(false)
-  const [searchStep, setSearchStep] = useState(1) // 1: Mood, 2: Time, 3: Genre
+  const [searchStep, setSearchStep] = useState(1) // 1: Mood, 2: Time, 3: Genre (for mood mode) or 1: Search, 2: Select (for similar mode)
   const [isRestoring, setIsRestoring] = useState(false)
+  
+  // State for similar game search
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchResults, setSearchResults] = useState([])
+  const [selectedGame, setSelectedGame] = useState(null)
+  const [isSearching, setIsSearching] = useState(false)
   
   // State for expanded options
   const [showAllMoods, setShowAllMoods] = useState(false)
@@ -387,8 +394,103 @@ export default function Games() {
     }
   }
 
+  // Handle game search for similar games
+  const handleGameSearch = async () => {
+    if (!searchQuery.trim()) {
+      setError('Please enter a game name to search')
+      return
+    }
+    
+    setIsSearching(true)
+    setError(null)
+    
+    try {
+      const response = await fetch('/api/search-games', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ query: searchQuery, limit: 20 })
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to search games')
+      }
+      
+      const games = await response.json()
+      setSearchResults(games)
+      setSearchStep(2) // Move to game selection step
+    } catch (err) {
+      console.error('Error searching games:', err)
+      setError(getUserFriendlyMessage(err) || 'Failed to search games. Please try again later.')
+    } finally {
+      setIsSearching(false)
+    }
+  }
+
+  // Handle finding similar games
+  const handleFindSimilar = async () => {
+    if (!selectedGame) {
+      setError('Please select a game first')
+      return
+    }
+    
+    setIsLoading(true)
+    setError(null)
+    
+    try {
+      const response = await fetch('/api/similar-games', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ gameId: selectedGame.id })
+      })
+      
+      if (!response.ok) {
+        // Try to get error message from response
+        let errorMessage = 'Failed to find similar games'
+        try {
+          const errorData = await response.json()
+          errorMessage = errorData.error || errorData.message || errorMessage
+        } catch (e) {
+          // If we can't parse the error, use the status text
+          errorMessage = response.statusText || errorMessage
+        }
+        throw new Error(errorMessage)
+      }
+      
+      const similarGames = await response.json()
+      console.log('Similar games:', similarGames)
+      
+      // Check if we got any results
+      if (!similarGames || similarGames.length === 0) {
+        setError('No similar games found. Try selecting a different game.')
+        setIsLoading(false)
+        return
+      }
+      
+      // Apply default sorting (by release date descending)
+      const sortedResults = [...similarGames].sort((a, b) => {
+        const aValue = a.first_release_date || 0
+        const bValue = b.first_release_date || 0
+        return aValue < bValue ? 1 : -1 // Descending order (newest first)
+      })
+      
+      setResults(sortedResults)
+      setOriginalResults(sortedResults)
+      setShowResults(true)
+    } catch (err) {
+      console.error('Error finding similar games:', err)
+      setError(getUserFriendlyMessage(err) || 'Failed to find similar games. Please try again later.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   // Reset selections and results
   const handleReset = () => {
+    setSearchMode(null)
     setSelectedMood(null)
     setSelectedTime(null)
     setSelectedGenre(null)
@@ -408,13 +510,23 @@ export default function Games() {
       sortBy: 'first_release_date',
       sortOrder: 'desc'
     })
+    // Reset similar game search state
+    setSearchQuery('')
+    setSearchResults([])
+    setSelectedGame(null)
     // Clear saved state from localStorage
     localStorage.removeItem('bzgamers-search-state')
   }
 
   // Function to load more results
   const handleLoadMore = async () => {
-    if (!selectedMood && !selectedTime && !selectedGenre) {
+    // For mood mode, check if we have mood/time/genre
+    if (searchMode === 'mood' && !selectedMood && !selectedTime && !selectedGenre) {
+      return
+    }
+    
+    // For similar mode, check if we have a selected game
+    if (searchMode === 'similar' && !selectedGame) {
       return
     }
     
@@ -424,40 +536,57 @@ export default function Games() {
     setIsLoading(true)
     
     try {
-      // If selectedGenre is a string (from the fallback list), map it to the appropriate genre ID or name
-      let genreParam = selectedGenre;
+      let response;
       
-      // Map hardcoded genre names to appropriate IGDB genre IDs
-      if (typeof selectedGenre === 'string') {
-        const genreMapping = {
-          'Action': 25,
-          'Adventure': 31,
-          'RPG': 12,
-          'Strategy': 15,
-          'Simulation': 13,
-          'Sports': 14,
-          'Puzzle': 9,
-          'Indie': 32,
-          'Shooter': 5
-        };
+      if (searchMode === 'similar') {
+        // Load more similar games
+        response = await fetch('/api/similar-games', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ 
+            gameId: selectedGame.id,
+            offset: originalResults.length 
+          })
+        })
+      } else {
+        // Load more mood-based games
+        // If selectedGenre is a string (from the fallback list), map it to the appropriate genre ID or name
+        let genreParam = selectedGenre;
         
-        genreParam = genreMapping[selectedGenre] || selectedGenre;
+        // Map hardcoded genre names to appropriate IGDB genre IDs
+        if (typeof selectedGenre === 'string') {
+          const genreMapping = {
+            'Action': 25,
+            'Adventure': 31,
+            'RPG': 12,
+            'Strategy': 15,
+            'Simulation': 13,
+            'Sports': 14,
+            'Puzzle': 9,
+            'Indie': 32,
+            'Shooter': 5
+          };
+          
+          genreParam = genreMapping[selectedGenre] || selectedGenre;
+        }
+        
+        const params = {
+          mood: selectedMood ? MOOD_MAP[selectedMood] : null,
+          timeAvailable: selectedTime ? TIME_MAP[selectedTime] : null,
+          genre: genreParam,
+          offset: originalResults.length // Start from where we left off
+        }
+        
+        response = await fetch('/api/games-by-mood', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(params)
+        })
       }
-      
-      const params = {
-        mood: selectedMood ? MOOD_MAP[selectedMood] : null,
-        timeAvailable: selectedTime ? TIME_MAP[selectedTime] : null,
-        genre: genreParam,
-        offset: originalResults.length // Start from where we left off
-      }
-      
-      const response = await fetch('/api/games-by-mood', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(params)
-      })
       
       if (!response.ok) {
         throw new Error('Failed to load more games')
@@ -700,8 +829,7 @@ export default function Games() {
         <motion.div variants={itemVariants}>
           <h1 className="text-3xl md:text-4xl font-bold mb-6">Find Your Perfect Game</h1>
           <p className="text-lg text-gray-600 dark:text-gray-400 mb-8">
-            Tell us how you&apos;re feeling, how much time you have, and what you&apos;re in the mood for.
-            We&apos;ll recommend games that match your current state of mind.
+            Choose how you&apos;d like to discover your next game.
           </p>
         </motion.div>
 
@@ -731,8 +859,49 @@ export default function Games() {
 
             {!showResults ? (
               <div>
-                {/* Step 1: Mood Selection */}
-                {searchStep === 1 && (
+                {/* Mode Selection */}
+                {!searchMode && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <h2 className="text-2xl font-bold mb-6">How would you like to find games?</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                      <button
+                        onClick={() => {
+                          setSearchMode('mood')
+                          setSearchStep(1)
+                        }}
+                        className="p-6 bg-gradient-to-br from-primary/10 to-primary/5 dark:from-primary/20 dark:to-primary/10 rounded-lg hover:bg-primary/20 dark:hover:bg-primary/30 hover:border-primary transition-all border-2 border-transparent text-left"
+                      >
+                        <h3 className="text-xl font-bold mb-2">By Mood</h3>
+                        <p className="text-gray-600 dark:text-gray-400">
+                          Tell us how you&apos;re feeling, how much time you have, and what you&apos;re in the mood for.
+                          We&apos;ll recommend games that match your current state of mind.
+                        </p>
+                      </button>
+                      <button
+                        onClick={() => {
+                          setSearchMode('similar')
+                          setSearchStep(1)
+                        }}
+                        className="p-6 bg-gradient-to-br from-primary/10 to-primary/5 dark:from-primary/20 dark:to-primary/10 rounded-lg hover:bg-primary/20 dark:hover:bg-primary/30 hover:border-primary transition-all border-2 border-transparent text-left"
+                      >
+                        <h3 className="text-xl font-bold mb-2">Similar Game (Beta)</h3>
+                        <p className="text-gray-600 dark:text-gray-400">
+                          Search for a game you like, and we&apos;ll find similar games available on the same platforms.
+                        </p>
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* Mood-based search flow */}
+                {searchMode === 'mood' && (
+                  <>
+                    {/* Step 1: Mood Selection */}
+                    {searchStep === 1 && (
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -910,6 +1079,149 @@ export default function Games() {
                     </div>
                   </motion.div>
                 )}
+                  </>
+                )}
+
+                {/* Similar game search flow */}
+                {searchMode === 'similar' && (
+                  <>
+                    {/* Step 1: Game Search */}
+                    {searchStep === 1 && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3 }}
+                      >
+                        <h2 className="text-2xl font-bold mb-6">Search for a game you like</h2>
+                        <div className="mb-6">
+                          <div className="flex gap-4">
+                            <input
+                              type="text"
+                              value={searchQuery}
+                              onChange={(e) => setSearchQuery(e.target.value)}
+                              onKeyPress={(e) => {
+                                if (e.key === 'Enter') {
+                                  handleGameSearch()
+                                }
+                              }}
+                              placeholder="Enter game name..."
+                              className="flex-1 px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:border-primary dark:bg-gray-700 dark:text-white"
+                            />
+                            <button
+                              onClick={handleGameSearch}
+                              disabled={isSearching || !searchQuery.trim()}
+                              className="btn-primary px-8 py-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {isSearching ? 'Searching...' : 'Search'}
+                            </button>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => {
+                            setSearchMode(null)
+                            setSearchQuery('')
+                            setSearchResults([])
+                          }}
+                          className="text-primary hover:text-primary-dark transition-colors"
+                        >
+                          ← Back to mode selection
+                        </button>
+                      </motion.div>
+                    )}
+
+                    {/* Step 2: Game Selection */}
+                    {searchStep === 2 && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3 }}
+                      >
+                        <h2 className="text-2xl font-bold mb-6">Select a game</h2>
+                        {searchResults.length === 0 ? (
+                          <div className="text-center py-8">
+                            <p className="text-gray-600 dark:text-gray-400 mb-4">No games found. Try a different search.</p>
+                            <button
+                              onClick={() => {
+                                setSearchStep(1)
+                                setSearchQuery('')
+                                setSearchResults([])
+                              }}
+                              className="text-primary hover:text-primary-dark transition-colors"
+                            >
+                              ← Back to search
+                            </button>
+                          </div>
+                        ) : (
+                          <>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                              {searchResults.map((game) => (
+                                <button
+                                  key={game.id}
+                                  onClick={() => setSelectedGame(game)}
+                                  className={`p-4 rounded-lg border-2 transition-all text-left ${
+                                    selectedGame?.id === game.id
+                                      ? 'bg-primary/20 border-primary'
+                                      : 'bg-gray-50 dark:bg-gray-700 border-transparent hover:bg-primary/10 dark:hover:bg-primary/20 hover:border-primary'
+                                  }`}
+                                >
+                                  <div className="flex items-start gap-4">
+                                    {game.cover && (
+                                      <img
+                                        src={game.cover.url?.replace('t_thumb', 't_cover_small') || 'https://via.placeholder.com/90x128?text=No+Image'}
+                                        alt={game.name}
+                                        className="w-20 h-28 object-cover rounded"
+                                      />
+                                    )}
+                                    <div className="flex-1">
+                                      <h3 className="font-bold mb-1">{game.name}</h3>
+                                      {game.first_release_date && (
+                                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                                          {new Date(game.first_release_date * 1000).getFullYear()}
+                                        </p>
+                                      )}
+                                      {game.platforms && game.platforms.length > 0 && (
+                                        <div className="flex flex-wrap gap-1 mt-2">
+                                          {game.platforms.slice(0, 3).map(platform => (
+                                            <span
+                                              key={platform.id}
+                                              className="text-xs bg-blue-100 dark:bg-blue-700 px-2 py-1 rounded-full"
+                                            >
+                                              {platform.name}
+                                            </span>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
+                            <div className="flex gap-4">
+                              <button
+                                onClick={() => {
+                                  setSearchStep(1)
+                                  setSearchQuery('')
+                                  setSearchResults([])
+                                  setSelectedGame(null)
+                                }}
+                                className="text-primary hover:text-primary-dark transition-colors"
+                              >
+                                ← Back to search
+                              </button>
+                              <button
+                                onClick={handleFindSimilar}
+                                disabled={!selectedGame || isLoading}
+                                className="btn-primary px-8 py-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                {isLoading ? 'Finding similar games...' : 'Give me a game like this'}
+                              </button>
+                            </div>
+                          </>
+                        )}
+                      </motion.div>
+                    )}
+                  </>
+                )}
               </div>
             ) : (
               <div>
@@ -941,13 +1253,31 @@ export default function Games() {
                 
                 {/* Personalized Summary */}
                 <div className="mb-6 p-4 bg-gradient-to-r from-primary/10 to-primary/5 dark:from-primary/20 dark:to-primary/10 rounded-lg border border-primary/20">
-                  <p 
-                    className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed"
-                    dangerouslySetInnerHTML={{ __html: generatePersonalizedSummary() }}
-                  />
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-                    Found <span className="font-semibold text-primary">{originalResults.length}</span> perfect games for you!
-                  </p>
+                  {searchMode === 'mood' ? (
+                    <>
+                      <p 
+                        className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed"
+                        dangerouslySetInnerHTML={{ __html: generatePersonalizedSummary() }}
+                      />
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                        Found <span className="font-semibold text-primary">{originalResults.length}</span> perfect games for you!
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
+                        Games similar to <span className="font-semibold text-primary">{selectedGame?.name}</span>
+                        {selectedGame?.platforms && selectedGame.platforms.length > 0 && (
+                          <span className="text-sm text-gray-600 dark:text-gray-400 ml-2">
+                            (filtered to {selectedGame.platforms.map(p => p.name).join(', ')})
+                          </span>
+                        )}
+                      </p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                        Found <span className="font-semibold text-primary">{originalResults.length}</span> similar games!
+                      </p>
+                    </>
+                  )}
                 </div>
                 
                 <GameResults 
