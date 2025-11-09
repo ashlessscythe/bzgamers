@@ -2,6 +2,7 @@
 
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
+import { useSession, signOut } from 'next-auth/react'
 import ThemeToggle from './ThemeToggle'
 import MobileMenu from './MobileMenu'
 import { SITE_NAME, GH_URL } from '../lib/config'
@@ -11,6 +12,7 @@ import { SITE_NAME, GH_URL } from '../lib/config'
  */
 export default function Layout({ children }) {
   const pathname = usePathname()
+  const { data: session, status } = useSession()
   const isActive = (path) => pathname === path
 
   return (
@@ -40,9 +42,39 @@ export default function Layout({ children }) {
             >
               About
             </Link>
+            {session?.user?.role === 'ADMIN' && (
+              <Link 
+                href="/admin" 
+                className={`hover:text-primary transition-colors ${isActive('/admin') ? 'text-primary font-medium' : ''}`}
+              >
+                Admin
+              </Link>
+            )}
           </nav>
           
           <div className="flex items-center space-x-4">
+            {status === 'loading' ? (
+              <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+            ) : session ? (
+              <div className="flex items-center space-x-3">
+                <span className="text-sm text-gray-600 dark:text-gray-400 hidden md:inline">
+                  {session.user?.email}
+                </span>
+                <button
+                  onClick={() => signOut({ callbackUrl: '/' })}
+                  className="text-sm btn-secondary px-3 py-1"
+                >
+                  Sign Out
+                </button>
+              </div>
+            ) : (
+              <Link
+                href="/auth/signin"
+                className="text-sm btn-primary px-3 py-1"
+              >
+                Sign In
+              </Link>
+            )}
             <ThemeToggle />
             <MobileMenu />
           </div>

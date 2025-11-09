@@ -2,11 +2,48 @@
 
 import { motion } from 'framer-motion'
 import Link from 'next/link'
+import { useState } from 'react'
 import { SITE_NAME, GH_URL } from '../lib/config'
 
 const MotionLink = motion(Link)
 
 export default function Home() {
+  const [email, setEmail] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitStatus, setSubmitStatus] = useState(null) // 'success' or 'error'
+
+  const handleWaitlistSubmit = async (e) => {
+    e.preventDefault()
+    setIsSubmitting(true)
+    setSubmitStatus(null)
+
+    try {
+      const response = await fetch('/api/waitlist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        setSubmitStatus('success')
+        setEmail('')
+        // Reset success message after 3 seconds
+        setTimeout(() => setSubmitStatus(null), 3000)
+      } else {
+        setSubmitStatus('error')
+        setTimeout(() => setSubmitStatus(null), 3000)
+      }
+    } catch (err) {
+      console.error('Error submitting waitlist:', err)
+      setSubmitStatus('error')
+      setTimeout(() => setSubmitStatus(null), 3000)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
   // Animation variants
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -82,6 +119,12 @@ export default function Home() {
             Find the perfect game for your current mood, available time, and preferences. 
             Connect with like-minded gamers and discover new experiences.
           </motion.p>
+          <motion.p 
+            className="text-base text-gray-500 dark:text-gray-500 max-w-2xl mx-auto mt-2 italic"
+            variants={itemVariants}
+          >
+            Only have 20 minutes and want to relax? We&apos;ll recommend cozy puzzle games.
+          </motion.p>
           <motion.p className="mt-4 text-sm text-gray-500 dark:text-gray-400" variants={itemVariants}>
             <a href={GH_URL} target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">GitHub</a>
           </motion.p>
@@ -111,7 +154,7 @@ export default function Home() {
               whileHover="hover"
               whileTap="tap"
             >
-              Find a Game
+              Let&apos;s Match You a Game
             </MotionLink>
           </motion.div>
           
@@ -127,15 +170,38 @@ export default function Home() {
             </div>
             <h2 className="text-xl font-bold mb-2">Connect with Gamers</h2>
             <p className="text-gray-600 dark:text-gray-400 mb-4">Find and connect with like-minded gamers who share your interests and schedule.</p>
-            <motion.button 
-              className="btn-secondary text-lg py-3 px-8 w-full opacity-70 cursor-not-allowed"
-              variants={buttonVariants}
-              whileHover="hover"
-              whileTap="tap"
-              disabled
-            >
-              Coming Soon
-            </motion.button>
+            <form onSubmit={handleWaitlistSubmit} className="w-full">
+              <div className="flex flex-col gap-2">
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Enter your email"
+                  required
+                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent"
+                />
+                <motion.button 
+                  type="submit"
+                  className="btn-secondary text-lg py-3 px-8 w-full"
+                  variants={buttonVariants}
+                  whileHover="hover"
+                  whileTap="tap"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? 'Joining...' : submitStatus === 'success' ? '✓ Joined!' : 'Join Waitlist'}
+                </motion.button>
+                {submitStatus === 'success' && (
+                  <p className="text-sm text-green-600 dark:text-green-400 text-center">
+                    Thanks! We&apos;ll notify you when this feature launches.
+                  </p>
+                )}
+                {submitStatus === 'error' && (
+                  <p className="text-sm text-red-600 dark:text-red-400 text-center">
+                    Something went wrong. Please try again.
+                  </p>
+                )}
+              </div>
+            </form>
           </motion.div>
         </motion.div>
         

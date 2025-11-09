@@ -239,9 +239,42 @@ model ApiUsage {
   @@index([statusCode])
 }
 
+// User authentication and roles
+model User {
+  id            Int      @id @default(autoincrement())
+  email         String   @unique
+  name          String?
+  password      String   // hashed password
+  role          UserRole @default(GUEST)
+  emailVerified DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  @@index([email])
+  @@index([role])
+}
+
+// Waitlist email storage
+model WaitlistEmail {
+  id          Int      @id @default(autoincrement())
+  email       String   @unique
+  notified    Boolean  @default(false)
+  notifiedAt  DateTime?
+  createdAt   DateTime @default(now())
+  
+  @@index([email])
+  @@index([notified])
+  @@index([createdAt])
+}
+
 // Enums
 enum ImageType {
   SCREENSHOT
   ARTWORK
   COVER
+}
+
+enum UserRole {
+  ADMIN
+  GUEST
 }

@@ -1,6 +1,7 @@
 import '../styles/globals.css'
 import Layout from '../components/Layout'
 import { SITE_NAME } from '../lib/config'
+import SessionProvider from '../components/SessionProvider'
 
 export const metadata = {
   title: {
@@ -17,9 +18,11 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body>
-        <Layout>
-          {children}
-        </Layout>
+        <SessionProvider>
+          <Layout>
+            {children}
+          </Layout>
+        </SessionProvider>
       </body>
     </html>
   )
