@@ -11,11 +11,13 @@ export default function Home() {
   const [email, setEmail] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitStatus, setSubmitStatus] = useState(null) // 'success' or 'error'
+  const [errorMessage, setErrorMessage] = useState('')
 
   const handleWaitlistSubmit = async (e) => {
     e.preventDefault()
     setIsSubmitting(true)
     setSubmitStatus(null)
+    setErrorMessage('')
 
     try {
       const response = await fetch('/api/waitlist', {
@@ -29,16 +31,27 @@ export default function Home() {
       if (data.success) {
         setSubmitStatus('success')
         setEmail('')
+        setErrorMessage('')
         // Reset success message after 3 seconds
         setTimeout(() => setSubmitStatus(null), 3000)
       } else {
         setSubmitStatus('error')
-        setTimeout(() => setSubmitStatus(null), 3000)
+        setErrorMessage(data.error || 'Something went wrong. Please try again.')
+        setEmail('')
+        setTimeout(() => {
+          setSubmitStatus(null)
+          setErrorMessage('')
+        }, 5000)
       }
     } catch (err) {
       console.error('Error submitting waitlist:', err)
       setSubmitStatus('error')
-      setTimeout(() => setSubmitStatus(null), 3000)
+      setErrorMessage('Something went wrong. Please try again.')
+      setEmail('')
+      setTimeout(() => {
+        setSubmitStatus(null)
+        setErrorMessage('')
+      }, 5000)
     } finally {
       setIsSubmitting(false)
     }
@@ -195,9 +208,9 @@ export default function Home() {
                     Thanks! We&apos;ll notify you when this feature launches.
                   </p>
                 )}
-                {submitStatus === 'error' && (
+                {submitStatus === 'error' && errorMessage && (
                   <p className="text-sm text-red-600 dark:text-red-400 text-center">
-                    Something went wrong. Please try again.
+                    {errorMessage}
                   </p>
                 )}
               </div>

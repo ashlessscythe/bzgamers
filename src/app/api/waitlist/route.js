@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server'
 import { PrismaClient } from '../../../generated/prisma'
+import { Resend } from 'resend'
+import { getWaitlistAutoWelcomeEmail } from '../../../lib/email-templates'
 
 const prisma = new PrismaClient()
+const resend = new Resend(process.env.RESEND_API_KEY)
 
 /**
  * POST /api/waitlist
@@ -25,7 +28,10 @@ export async function POST(request) {
 
     if (existing) {
       return NextResponse.json(
-        { error: 'Email already on waitlist', success: false },
+        { 
+          error: 'This email is already on the waitlist. We\'ll notify you when the feature launches!', 
+          success: false 
+        },
         { status: 409 }
       )
     }
@@ -37,6 +43,37 @@ export async function POST(request) {
         notified: false
       }
     })
+
+    // Automatically send welcome email
+    try {
+      const fromEmail = process.env.RESEND_FROM_EMAIL || 'BZGamers <onboarding@resend.dev>'
+      const emailHtml = getWaitlistAutoWelcomeEmail(email.toLowerCase())
+      
+      const { data, error } = await resend.emails.send({
+        from: fromEmail,
+        to: email.toLowerCase(),
+        subject: 'Thanks for Joining BZGamers Waitlist! 🎮',
+        html: emailHtml
+      })
+
+      if (error) {
+        console.error('Error sending welcome email:', error)
+        // Don't fail the request if email fails, just log it
+      } else {
+        // Mark as notified since we sent the welcome email
+        await prisma.waitlistEmail.update({
+          where: { id: waitlistEmail.id },
+          data: {
+            notified: true,
+            notifiedAt: new Date()
+          }
+        })
+        console.log('Welcome email sent successfully to:', email.toLowerCase())
+      }
+    } catch (emailError) {
+      console.error('Error sending welcome email:', emailError)
+      // Don't fail the request if email fails, just log it
+    }
 
     return NextResponse.json({
       success: true,
