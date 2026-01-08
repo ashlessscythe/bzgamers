@@ -3,6 +3,9 @@
  * Run with: node scripts/seed-admin.js
  */
 
+// Load environment variables
+require('dotenv').config()
+
 const { PrismaClient } = require('../src/generated/prisma')
 const bcrypt = require('bcryptjs')
 const readline = require('readline')
