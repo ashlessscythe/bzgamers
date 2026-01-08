@@ -143,7 +143,9 @@ export default function Games() {
           showResults: savedShowResults,
           advancedFilters: savedFilters,
           showAllMoods: savedShowAllMoods,
-          showAdvancedGenres: savedShowAdvancedGenres
+          showAdvancedGenres: savedShowAdvancedGenres,
+          searchMode: savedSearchMode,
+          selectedGame: savedSelectedGame
         } = parsedState
 
         // Only restore if we have results to show
@@ -165,6 +167,8 @@ export default function Games() {
             sortBy: 'first_release_date',
             sortOrder: 'desc'
           })
+          setSearchMode(savedSearchMode || null)
+          setSelectedGame(savedSelectedGame || null)
         }
       } catch (err) {
         console.error('Error restoring saved state:', err)
@@ -188,14 +192,16 @@ export default function Games() {
         showResults,
         advancedFilters,
         showAllMoods,
-        showAdvancedGenres
+        showAdvancedGenres,
+        searchMode,
+        selectedGame
       }
       localStorage.setItem('bzgamers-search-state', JSON.stringify(stateToSave))
     } else {
       // Clear saved state if no results to show
       localStorage.removeItem('bzgamers-search-state')
     }
-  }, [selectedMood, selectedTime, selectedGenre, results, originalResults, showResults, advancedFilters, showAllMoods, showAdvancedGenres])
+  }, [selectedMood, selectedTime, selectedGenre, results, originalResults, showResults, advancedFilters, showAllMoods, showAdvancedGenres, searchMode, selectedGame])
 
   // Restore scroll position after loading more results
   useEffect(() => {
@@ -755,12 +761,12 @@ export default function Games() {
     
     // Add mood
     if (selectedMood) {
-      parts.push(`Since you're feeling <span class="font-semibold text-primary">${selectedMood.toLowerCase()}</span>`)
+      parts.push(`Since you're feeling <span class="font-semibold text-primary dark:text-primary">${selectedMood.toLowerCase()}</span>`)
     }
     
     // Add time
     if (selectedTime) {
-      parts.push(`and you have <span class="font-semibold text-primary">${selectedTime}</span> to play`)
+      parts.push(`and you have <span class="font-semibold text-primary dark:text-primary">${selectedTime}</span> to play`)
     }
     
     // Add genre
@@ -772,24 +778,24 @@ export default function Games() {
           genreName = genreObj.name
         }
       }
-      parts.push(`and you enjoy <span class="font-semibold text-primary">${genreName}</span> games`)
+      parts.push(`and you enjoy <span class="font-semibold text-primary dark:text-primary">${genreName}</span> games`)
     }
     
     if (parts.length === 0) {
-      return "Here are some great games for you to discover! ��"
+      return '<span class="text-gray-700 dark:text-gray-300">Here are some great games for you to discover! 🎮</span>'
     }
     
     // Check for special combinations first
     if (selectedMood && selectedTime && selectedGenre) {
       const specialCombinations = {
-        'Energetic-< 30 min-Shooter': "Perfect! A quick adrenaline rush is exactly what you need right now! 💥",
-        'Relaxed-2+ hours-Adventure': "Ah, the perfect setup for an immersive escape! Time to get lost in another world! 🌍",
-        'Focused-1-2 hours-Strategy': "Your brain is ready for some serious tactical thinking! 🧠⚡",
-        'Social-30-60 min-Sport': "Time for some friendly competition! Perfect for a quick gaming session with friends! ⚽",
-        'Creative-2+ hours-Indie': "Your imagination is calling! These creative gems will inspire you for hours! ✨",
-        'Competitive-< 30 min-Fighting': "Quick matches, intense action - your competitive spirit will love this! 👊",
-        'Adventurous-1-2 hours-Role-playing (RPG)': "Epic quests await! Time to embark on an unforgettable journey! 🗡️",
-        'Nostalgic-30-60 min-Platform': "Classic vibes for a classic mood! These games will bring back the good memories! 📼"
+        'Energetic-< 30 min-Shooter': '<span class="text-gray-700 dark:text-gray-300">Perfect! A quick adrenaline rush is exactly what you need right now! 💥</span>',
+        'Relaxed-2+ hours-Adventure': '<span class="text-gray-700 dark:text-gray-300">Ah, the perfect setup for an immersive escape! Time to get lost in another world! 🌍</span>',
+        'Focused-1-2 hours-Strategy': '<span class="text-gray-700 dark:text-gray-300">Your brain is ready for some serious tactical thinking! 🧠⚡</span>',
+        'Social-30-60 min-Sport': '<span class="text-gray-700 dark:text-gray-300">Time for some friendly competition! Perfect for a quick gaming session with friends! ⚽</span>',
+        'Creative-2+ hours-Indie': '<span class="text-gray-700 dark:text-gray-300">Your imagination is calling! These creative gems will inspire you for hours! ✨</span>',
+        'Competitive-< 30 min-Fighting': '<span class="text-gray-700 dark:text-gray-300">Quick matches, intense action - your competitive spirit will love this! 👊</span>',
+        'Adventurous-1-2 hours-Role-playing (RPG)': '<span class="text-gray-700 dark:text-gray-300">Epic quests await! Time to embark on an unforgettable journey! 🗡️</span>',
+        'Nostalgic-30-60 min-Platform': '<span class="text-gray-700 dark:text-gray-300">Classic vibes for a classic mood! These games will bring back the good memories! 📼</span>'
       }
       
       const combinationKey = `${selectedMood}-${selectedTime}-${selectedGenre}`
@@ -799,18 +805,18 @@ export default function Games() {
     }
     
     // Generate different closing messages based on mood
-    let closingMessage = "here are some perfect games for your current vibe! 🎮"
+    let closingMessage = '<span class="text-gray-700 dark:text-gray-300">here are some perfect games for your current vibe! 🎮</span>'
     
     if (selectedMood) {
       const moodClosings = {
-        'Energetic': "here are some exciting games to match your energy! ⚡",
-        'Relaxed': "here are some chill games to keep you in that peaceful state! 😌",
-        'Focused': "here are some engaging games to keep your mind sharp! 🧠",
-        'Creative': "here are some inspiring games to spark your imagination! ✨",
-        'Social': "here are some fun games to share with friends! 👥",
-        'Competitive': "here are some intense games to satisfy your competitive spirit! 🏆",
-        'Adventurous': "here are some epic games for your next adventure! 🗺️",
-        'Nostalgic': "here are some games that'll take you back to the good old days! 📼"
+        'Energetic': '<span class="text-gray-700 dark:text-gray-300">here are some exciting games to match your energy! ⚡</span>',
+        'Relaxed': '<span class="text-gray-700 dark:text-gray-300">here are some chill games to keep you in that peaceful state! 😌</span>',
+        'Focused': '<span class="text-gray-700 dark:text-gray-300">here are some engaging games to keep your mind sharp! 🧠</span>',
+        'Creative': '<span class="text-gray-700 dark:text-gray-300">here are some inspiring games to spark your imagination! ✨</span>',
+        'Social': '<span class="text-gray-700 dark:text-gray-300">here are some fun games to share with friends! 👥</span>',
+        'Competitive': '<span class="text-gray-700 dark:text-gray-300">here are some intense games to satisfy your competitive spirit! 🏆</span>',
+        'Adventurous': '<span class="text-gray-700 dark:text-gray-300">here are some epic games for your next adventure! 🗺️</span>',
+        'Nostalgic': '<span class="text-gray-700 dark:text-gray-300">here are some games that\'ll take you back to the good old days! 📼</span>'
       }
       closingMessage = moodClosings[selectedMood] || closingMessage
     }
@@ -1253,21 +1259,11 @@ export default function Games() {
                 
                 {/* Personalized Summary */}
                 <div className="mb-6 p-4 bg-gradient-to-r from-primary/10 to-primary/5 dark:from-primary/20 dark:to-primary/10 rounded-lg border border-primary/20">
-                  {searchMode === 'mood' ? (
-                    <>
-                      <p 
-                        className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed"
-                        dangerouslySetInnerHTML={{ __html: generatePersonalizedSummary() }}
-                      />
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-                        Found <span className="font-semibold text-primary">{originalResults.length}</span> perfect games for you!
-                      </p>
-                    </>
-                  ) : (
+                  {selectedGame ? (
                     <>
                       <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
-                        Games similar to <span className="font-semibold text-primary">{selectedGame?.name}</span>
-                        {selectedGame?.platforms && selectedGame.platforms.length > 0 && (
+                        Games similar to <span className="font-semibold text-primary">{selectedGame.name}</span>
+                        {selectedGame.platforms && selectedGame.platforms.length > 0 && (
                           <span className="text-sm text-gray-600 dark:text-gray-400 ml-2">
                             (filtered to {selectedGame.platforms.map(p => p.name).join(', ')})
                           </span>
@@ -1275,6 +1271,16 @@ export default function Games() {
                       </p>
                       <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
                         Found <span className="font-semibold text-primary">{originalResults.length}</span> similar games!
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <p 
+                        className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed"
+                        dangerouslySetInnerHTML={{ __html: generatePersonalizedSummary() }}
+                      />
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                        Found <span className="font-semibold text-primary">{originalResults.length}</span> perfect games for you!
                       </p>
                     </>
                   )}
