@@ -68,9 +68,15 @@ export default function About() {
           </p>
           
           <h2 className="text-2xl font-bold mb-4">Our Vision</h2>
-          <p className="text-lg text-gray-600 dark:text-gray-400">
+          <p className="text-lg text-gray-600 dark:text-gray-400 mb-6">
             We&apos;re building a community where gamers can find not only the perfect game to play but also the perfect people to play with. 
             Our upcoming features will include matchmaking based on mood, taste, and availability, making it easier than ever to connect with fellow gamers.
+          </p>
+          
+          <h2 className="text-2xl font-bold mb-4">Mental Health Matters</h2>
+          <p className="text-lg text-gray-600 dark:text-gray-400">
+            At BZGamers, we believe that mental health is a priority. Gaming should be a source of joy, relaxation, and connection—not stress or pressure. 
+            We&apos;re committed to creating a positive, supportive community where everyone can find games that genuinely help them unwind, recharge, and feel good.
           </p>
         </motion.div>
         
@@ -127,21 +133,11 @@ export default function About() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="flex items-center space-x-4">
               <div className="w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center">
-                <span className="text-xl font-bold">JD</span>
+                <span className="text-xl font-bold">TA</span>
               </div>
               <div>
-                <h3 className="font-bold">Jane Doe</h3>
-                <p className="text-gray-600 dark:text-gray-400">Founder & Lead Developer</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center space-x-4">
-              <div className="w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center">
-                <span className="text-xl font-bold">JS</span>
-              </div>
-              <div>
-                <h3 className="font-bold">John Smith</h3>
-                <p className="text-gray-600 dark:text-gray-400">UX Designer & Gamer Relations</p>
+                <h3 className="font-bold">Tony A</h3>
+                <p className="text-gray-600 dark:text-gray-400">Lead Developer & Designer</p>
               </div>
             </div>
           </div>

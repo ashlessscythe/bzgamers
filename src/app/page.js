@@ -203,6 +203,9 @@ export default function Home() {
                 >
                   {isSubmitting ? 'Joining...' : submitStatus === 'success' ? '✓ Joined!' : 'Join Waitlist'}
                 </motion.button>
+                <p className="text-xs text-gray-500 dark:text-gray-500 text-center mt-1">
+                  We promise not to spam you—we&apos;re gamers, not email ninjas. Your inbox is safe with us! 🛡️
+                </p>
                 {submitStatus === 'success' && (
                   <p className="text-sm text-green-600 dark:text-green-400 text-center">
                     Thanks! We&apos;ll notify you when this feature launches.
