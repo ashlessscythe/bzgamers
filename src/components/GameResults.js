@@ -107,38 +107,49 @@ export default function GameResults({
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h2 className="text-2xl font-bold">{getHeadingText(results.length)}</h2>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+        <div className="flex-1">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{getHeadingText(results.length)}</h2>
           {getSubtitleText() && (
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
               {getSubtitleText()}
             </p>
           )}
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 flex-shrink-0 w-full sm:w-auto">
           <motion.button
             onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-            className="text-primary hover:text-primary-dark transition-colors flex items-center gap-2"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+            className={`
+              relative px-4 py-2.5 sm:py-2.5 rounded-lg font-medium transition-all duration-200 flex items-center justify-center gap-2 min-h-[44px] sm:min-h-0
+              ${showAdvancedFilters || hasActiveFilters
+                ? 'bg-primary text-white hover:bg-primary-dark dark:bg-blue-600 dark:hover:bg-blue-500 shadow-md'
+                : 'bg-white dark:bg-gray-700 text-primary dark:text-blue-400 border-2 border-primary dark:border-blue-400 hover:bg-primary/10 dark:hover:bg-blue-400/20 shadow-sm'
+              }
+            `}
+            whileHover={{ scale: 1.05, y: -1 }}
+            whileTap={{ scale: 0.98 }}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M3 3a1 1 0 011-1h12a1 1 0 011 1v3a1 1 0 01-.293.707L12 11.414V15a1 1 0 01-.293.707l-2 2A1 1 0 018 17v-5.586L3.293 6.707A1 1 0 013 6V3z" clipRule="evenodd" />
             </svg>
-            {showAdvancedFilters ? 'Hide Filters' : 'Advanced Filters'}
+            <span className="text-sm sm:text-base">{showAdvancedFilters ? 'Hide Filters' : 'Advanced Filters'}</span>
+            {hasActiveFilters && !showAdvancedFilters && (
+              <span className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 dark:bg-red-400 rounded-full flex items-center justify-center">
+                <span className="text-xs text-white font-bold">!</span>
+              </span>
+            )}
           </motion.button>
           {onBack && (
             <motion.button
-              className="text-primary hover:text-primary-dark transition-colors flex items-center"
-              whileHover={{ x: -5 }}
+              className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors flex items-center justify-center gap-1.5 text-sm min-h-[44px] sm:min-h-0 px-3 sm:px-0"
+              whileHover={{ x: -3 }}
               whileTap={{ scale: 0.95 }}
               onClick={onBack}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
               </svg>
-              Back to Search
+              <span>Back to Search</span>
             </motion.button>
           )}
         </div>

@@ -72,7 +72,7 @@ export default function GameCard({ game }) {
       </div>
       
       <div className="p-4">
-        <h3 className="text-lg font-bold mb-1 line-clamp-1">{game.name || 'Unknown Game'}</h3>
+        <h3 className="text-lg font-bold mb-1 line-clamp-1 text-gray-900 dark:text-gray-100">{game.name || 'Unknown Game'}</h3>
         <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
           {formatDate(game.first_release_date)}
         </p>

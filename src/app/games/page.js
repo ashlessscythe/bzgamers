@@ -761,12 +761,12 @@ export default function Games() {
     
     // Add mood
     if (selectedMood) {
-      parts.push(`Since you're feeling <span class="font-semibold text-primary dark:text-primary">${selectedMood.toLowerCase()}</span>`)
+      parts.push(`Since you're feeling <span class="font-semibold text-primary dark:text-blue-400">${selectedMood.toLowerCase()}</span>`)
     }
     
     // Add time
     if (selectedTime) {
-      parts.push(`and you have <span class="font-semibold text-primary dark:text-primary">${selectedTime}</span> to play`)
+      parts.push(`and you have <span class="font-semibold text-primary dark:text-blue-400">${selectedTime}</span> to play`)
     }
     
     // Add genre
@@ -778,7 +778,7 @@ export default function Games() {
           genreName = genreObj.name
         }
       }
-      parts.push(`and you enjoy <span class="font-semibold text-primary dark:text-primary">${genreName}</span> games`)
+      parts.push(`and you enjoy <span class="font-semibold text-primary dark:text-blue-400">${genreName}</span> games`)
     }
     
     if (parts.length === 0) {
@@ -1262,7 +1262,7 @@ export default function Games() {
                   {selectedGame ? (
                     <>
                       <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
-                        Games similar to <span className="font-semibold text-primary">{selectedGame.name}</span>
+                        Games similar to <span className="font-semibold text-primary dark:text-blue-400">{selectedGame.name}</span>
                         {selectedGame.platforms && selectedGame.platforms.length > 0 && (
                           <span className="text-sm text-gray-600 dark:text-gray-400 ml-2">
                             (filtered to {selectedGame.platforms.map(p => p.name).join(', ')})
@@ -1270,7 +1270,7 @@ export default function Games() {
                         )}
                       </p>
                       <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-                        Found <span className="font-semibold text-primary">{originalResults.length}</span> similar games!
+                        Found <span className="font-semibold text-primary dark:text-blue-400">{originalResults.length}</span> similar games!
                       </p>
                     </>
                   ) : (
@@ -1280,7 +1280,7 @@ export default function Games() {
                         dangerouslySetInnerHTML={{ __html: generatePersonalizedSummary() }}
                       />
                       <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-                        Found <span className="font-semibold text-primary">{originalResults.length}</span> perfect games for you!
+                        Found <span className="font-semibold text-primary dark:text-blue-400">{originalResults.length}</span> perfect games for you!
                       </p>
                     </>
                   )}
