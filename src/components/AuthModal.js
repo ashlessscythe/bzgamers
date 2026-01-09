@@ -80,9 +80,13 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'signin' }) {
         return true
       }
       
-      // Ensure container is visible and has proper dimensions
-      if (widgetContainer.offsetWidth === 0 || widgetContainer.offsetHeight === 0) {
-        console.warn('Turnstile widget container has no dimensions')
+      // Check if container is in the DOM and potentially visible
+      // Note: We don't check dimensions here as the widget will size itself
+      // The container just needs to exist in the DOM
+      const rect = widgetContainer.getBoundingClientRect()
+      if (rect.width === 0 && rect.height === 0) {
+        // Container might be hidden by animation, wait a bit
+        console.warn('Turnstile widget container appears hidden, will retry')
         return false
       }
 
@@ -163,11 +167,11 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'signin' }) {
       }
     }
 
-    // Small delay to ensure DOM is ready
+    // Small delay to ensure DOM is ready and modal animation completes
     turnstileInitAttempts.current = 0
     turnstileInitTimeout.current = setTimeout(() => {
       tryInit()
-    }, 100)
+    }, 300) // Increased delay to allow modal animation to complete
 
     return cleanup
   }, [isOpen, mode])
@@ -420,8 +424,8 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'signin' }) {
               </div>
 
               {mode === 'signup' && (
-                <div>
-                  <div id="turnstile-widget" className="flex justify-center"></div>
+                <div className="min-h-[65px] flex items-center justify-center">
+                  <div id="turnstile-widget" className="flex justify-center w-full"></div>
                 </div>
               )}
 
