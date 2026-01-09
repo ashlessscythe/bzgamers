@@ -10,7 +10,7 @@ const prisma = new PrismaClient()
  */
 export async function POST(request) {
   try {
-    const { email, password, name } = await request.json()
+    const { email, password, name, turnstileToken } = await request.json()
 
     // Validation
     if (!email || !email.includes('@')) {
@@ -23,6 +23,44 @@ export async function POST(request) {
     if (!password || password.length < 6) {
       return NextResponse.json(
         { error: 'Password must be at least 6 characters' },
+        { status: 400 }
+      )
+    }
+
+    // Verify Turnstile token
+    if (!turnstileToken) {
+      return NextResponse.json(
+        { error: 'Captcha verification is required' },
+        { status: 400 }
+      )
+    }
+
+    const secretKey = process.env.NEXT_TURNSTILE_SECRET_KEY
+    if (!secretKey) {
+      console.error('NEXT_TURNSTILE_SECRET_KEY is not set')
+      return NextResponse.json(
+        { error: 'Server configuration error' },
+        { status: 500 }
+      )
+    }
+
+    // Verify token with Cloudflare
+    const verifyResponse = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        secret: secretKey,
+        response: turnstileToken,
+      }),
+    })
+
+    const verifyData = await verifyResponse.json()
+
+    if (!verifyData.success) {
+      return NextResponse.json(
+        { error: 'Captcha verification failed. Please try again.' },
         { status: 400 }
       )
     }

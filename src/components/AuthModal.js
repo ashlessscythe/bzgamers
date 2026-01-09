@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { signIn } from 'next-auth/react'
 import { motion, AnimatePresence } from 'framer-motion'
 
@@ -13,7 +13,65 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'signin' }) {
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [success, setSuccess] = useState(false)
+  const [turnstileToken, setTurnstileToken] = useState('')
+  const turnstileWidgetId = useRef(null)
   
+  // Load Turnstile script
+  useEffect(() => {
+    if (typeof window !== 'undefined' && !window.turnstile) {
+      const script = document.createElement('script')
+      script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js'
+      script.async = true
+      script.defer = true
+      document.body.appendChild(script)
+      
+      return () => {
+        // Cleanup script on unmount
+        const existingScript = document.querySelector('script[src="https://challenges.cloudflare.com/turnstile/v0/api.js"]')
+        if (existingScript) {
+          document.body.removeChild(existingScript)
+        }
+      }
+    }
+  }, [])
+
+  // Initialize/reset Turnstile widget when modal opens or mode changes
+  useEffect(() => {
+    if (isOpen && mode === 'signup' && window.turnstile) {
+      const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY
+      if (siteKey && document.getElementById('turnstile-widget')) {
+        // Remove existing widget if any
+        if (turnstileWidgetId.current !== null) {
+          window.turnstile.remove(turnstileWidgetId.current)
+          turnstileWidgetId.current = null
+        }
+        
+        // Render new widget
+        setTimeout(() => {
+          if (document.getElementById('turnstile-widget')) {
+            turnstileWidgetId.current = window.turnstile.render('#turnstile-widget', {
+              sitekey: siteKey,
+              callback: (token) => {
+                setTurnstileToken(token)
+              },
+              'error-callback': () => {
+                setTurnstileToken('')
+              },
+              'expired-callback': () => {
+                setTurnstileToken('')
+              },
+            })
+          }
+        }, 100)
+      }
+    } else if (turnstileWidgetId.current !== null && window.turnstile) {
+      // Remove widget when switching to sign in or closing
+      window.turnstile.remove(turnstileWidgetId.current)
+      turnstileWidgetId.current = null
+      setTurnstileToken('')
+    }
+  }, [isOpen, mode])
+
   // Update mode when initialMode changes (e.g., when switching between signin/signup buttons)
   useEffect(() => {
     if (isOpen) {
@@ -24,6 +82,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'signin' }) {
       setName('')
       setError('')
       setSuccess(false)
+      setTurnstileToken('')
     }
   }, [initialMode, isOpen])
 
@@ -64,13 +123,18 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'signin' }) {
       return
     }
 
+    if (!turnstileToken) {
+      setError('Please complete the captcha verification')
+      return
+    }
+
     setIsLoading(true)
 
     try {
       const response = await fetch('/api/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, name: name || null })
+        body: JSON.stringify({ email, password, name: name || null, turnstileToken })
       })
 
       const data = await response.json()
@@ -92,10 +156,20 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'signin' }) {
       } else {
         setError(data.error || 'Failed to create account')
         setIsLoading(false)
+        // Reset Turnstile on error
+        if (turnstileWidgetId.current !== null && window.turnstile) {
+          window.turnstile.reset(turnstileWidgetId.current)
+          setTurnstileToken('')
+        }
       }
     } catch (err) {
       setError('An error occurred. Please try again.')
       setIsLoading(false)
+      // Reset Turnstile on error
+      if (turnstileWidgetId.current !== null && window.turnstile) {
+        window.turnstile.reset(turnstileWidgetId.current)
+        setTurnstileToken('')
+      }
     }
   }
 
@@ -105,7 +179,13 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'signin' }) {
     setName('')
     setError('')
     setSuccess(false)
+    setTurnstileToken('')
     setMode('signin')
+    // Remove Turnstile widget
+    if (turnstileWidgetId.current !== null && window.turnstile) {
+      window.turnstile.remove(turnstileWidgetId.current)
+      turnstileWidgetId.current = null
+    }
     onClose()
   }
 
@@ -213,6 +293,12 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'signin' }) {
                 )}
               </div>
 
+              {mode === 'signup' && (
+                <div>
+                  <div id="turnstile-widget" className="flex justify-center"></div>
+                </div>
+              )}
+
               {error && (
                 <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 px-4 py-3 rounded-lg text-sm">
                   {error}
@@ -238,6 +324,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'signin' }) {
                 setMode(mode === 'signin' ? 'signup' : 'signin')
                 setError('')
                 setPassword('')
+                setTurnstileToken('')
               }}
               className="text-sm text-primary dark:text-blue-400 dark:hover:text-blue-300 hover:underline"
             >
