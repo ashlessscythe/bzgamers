@@ -61,7 +61,7 @@ const nextConfig = {
           },
           {
             key: 'Permissions-Policy',
-            value: 'browsing-topics=(), interest-cohort=()',
+            value: 'browsing-topics=(), interest-cohort=(), geolocation=(), microphone=(), camera=()',
           },
         ],
       },

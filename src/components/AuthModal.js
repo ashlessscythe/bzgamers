@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { signIn } from 'next-auth/react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
-import Script from 'next/script'
+import { loadTurnstile, isTurnstileLoaded } from '../lib/turnstile-loader'
 
 export default function AuthModal({ isOpen, onClose, initialMode = 'signin' }) {
   const [mode, setMode] = useState(initialMode) // 'signin' or 'signup'
@@ -16,36 +16,25 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'signin' }) {
   const [isLoading, setIsLoading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [turnstileToken, setTurnstileToken] = useState('')
-  const [shouldLoadScript, setShouldLoadScript] = useState(false)
   const turnstileWidgetId = useRef(null)
   const turnstileScriptLoaded = useRef(false)
   const turnstileInitTimeout = useRef(null)
   const turnstileInitAttempts = useRef(0)
   
-  // Check if Turnstile is already loaded globally
+  // Load Turnstile script once on mount
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      if (window.turnstile) {
-        turnstileScriptLoaded.current = true
-        setShouldLoadScript(false)
-      } else {
-        // Check if script tag already exists
-        const existingScript = document.querySelector('script[src*="turnstile/v0/api.js"]')
-        if (existingScript) {
+    if (isTurnstileLoaded()) {
+      turnstileScriptLoaded.current = true
+    } else {
+      loadTurnstile()
+        .then(() => {
           turnstileScriptLoaded.current = true
-          setShouldLoadScript(false)
-        } else {
-          setShouldLoadScript(true)
-        }
-      }
+        })
+        .catch((error) => {
+          console.error('Failed to load Turnstile:', error)
+        })
     }
   }, [])
-  
-  // Track when Turnstile script is loaded
-  const handleTurnstileLoad = () => {
-    turnstileScriptLoaded.current = true
-    setShouldLoadScript(false)
-  }
 
   // Initialize/reset Turnstile widget when modal opens or mode changes
   useEffect(() => {
@@ -327,15 +316,6 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'signin' }) {
 
   return (
     <>
-      {/* Only load script if not already loaded */}
-      {shouldLoadScript && (
-        <Script
-          src="https://challenges.cloudflare.com/turnstile/v0/api.js"
-          strategy="lazyOnload"
-          onLoad={handleTurnstileLoad}
-          id="turnstile-script"
-        />
-      )}
       <AnimatePresence>
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         {/* Backdrop */}

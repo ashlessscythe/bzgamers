@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
+import { loadTurnstile, isTurnstileLoaded } from '@/lib/turnstile-loader'
 
 export default function ForgotPasswordPage() {
   const router = useRouter()
@@ -26,16 +27,18 @@ export default function ForgotPasswordPage() {
 
     let isMounted = true
 
-    const initTurnstile = () => {
+    const initTurnstile = async () => {
       // Double check after timeout
       if (!isMounted || turnstileWidgetId.current !== null) return
 
       const widgetElement = document.getElementById('turnstile-widget-forgot')
       if (!widgetElement) return
 
-      if (window.turnstile) {
-        // Turnstile is already loaded, render immediately
-        if (turnstileWidgetId.current === null && isMounted) {
+      try {
+        // Load Turnstile using shared loader
+        await loadTurnstile()
+
+        if (isMounted && turnstileWidgetId.current === null && window.turnstile) {
           try {
             turnstileWidgetId.current = window.turnstile.render('#turnstile-widget-forgot', {
               sitekey: siteKey,
@@ -59,84 +62,8 @@ export default function ForgotPasswordPage() {
             console.error('Error rendering Turnstile widget:', error)
           }
         }
-      } else {
-        // Check if script is already being loaded
-        const existingScript = document.querySelector('script[src="https://challenges.cloudflare.com/turnstile/v0/api.js"]')
-        if (existingScript) {
-          // Script is loading, wait for it
-          existingScript.addEventListener('load', () => {
-            setTimeout(() => {
-              if (isMounted && turnstileWidgetId.current === null && window.turnstile) {
-                const widgetElement = document.getElementById('turnstile-widget-forgot')
-                if (widgetElement) {
-                  try {
-                    turnstileWidgetId.current = window.turnstile.render('#turnstile-widget-forgot', {
-                      sitekey: siteKey,
-                      callback: (token) => {
-                        if (isMounted) {
-                          setTurnstileToken(token)
-                        }
-                      },
-                      'error-callback': () => {
-                        if (isMounted) {
-                          setTurnstileToken('')
-                        }
-                      },
-                      'expired-callback': () => {
-                        if (isMounted) {
-                          setTurnstileToken('')
-                        }
-                      },
-                    })
-                  } catch (error) {
-                    console.error('Error rendering Turnstile widget:', error)
-                  }
-                }
-              }
-            }, 100)
-          })
-        } else {
-          // Load Turnstile script first
-          const script = document.createElement('script')
-          script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js'
-          script.async = true
-          script.defer = true
-          
-          script.onload = () => {
-            // Wait a bit for Turnstile to be fully ready
-            setTimeout(() => {
-              if (isMounted && turnstileWidgetId.current === null && window.turnstile) {
-                const widgetElement = document.getElementById('turnstile-widget-forgot')
-                if (widgetElement) {
-                  try {
-                    turnstileWidgetId.current = window.turnstile.render('#turnstile-widget-forgot', {
-                      sitekey: siteKey,
-                      callback: (token) => {
-                        if (isMounted) {
-                          setTurnstileToken(token)
-                        }
-                      },
-                      'error-callback': () => {
-                        if (isMounted) {
-                          setTurnstileToken('')
-                        }
-                      },
-                      'expired-callback': () => {
-                        if (isMounted) {
-                          setTurnstileToken('')
-                        }
-                      },
-                    })
-                  } catch (error) {
-                    console.error('Error rendering Turnstile widget:', error)
-                  }
-                }
-              }
-            }, 100)
-          }
-          
-          document.body.appendChild(script)
-        }
+      } catch (error) {
+        console.error('Failed to load Turnstile:', error)
       }
     }
 
