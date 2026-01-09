@@ -20,8 +20,16 @@ export async function proxy(request) {
     return NextResponse.next()
   }
   
-  // Check authentication
+  // Check authentication (needed for admin and profile checks)
   const session = await auth()
+  
+  // Admin-only routes (check before general API routes)
+  if (pathname.startsWith('/admin') || pathname.startsWith('/api/admin')) {
+    if (!session || session.user?.role !== 'ADMIN') {
+      return NextResponse.redirect(new URL('/', request.url))
+    }
+    return NextResponse.next()
+  }
   
   // Profile and favorites routes - require authentication
   if (pathname.startsWith('/profile') || pathname.startsWith('/api/favorites')) {
@@ -35,28 +43,23 @@ export async function proxy(request) {
     return NextResponse.next()
   }
   
-  // Admin-only routes
-  if (pathname.startsWith('/admin') || pathname.startsWith('/api/admin')) {
-    if (!session || session.user?.role !== 'ADMIN') {
-      return NextResponse.redirect(new URL('/', request.url))
-    }
+  // Allow all other API routes for everyone (after specific checks above)
+  if (pathname.startsWith('/api/')) {
     return NextResponse.next()
   }
   
-  // For authenticated GUEST users, allow home page, profile, and favorites
+  // Public routes - accessible to everyone (anonymous, GUEST, and ADMIN)
+  const publicRoutes = ['/', '/games', '/about']
+  if (publicRoutes.includes(pathname)) {
+    return NextResponse.next()
+  }
+  
+  // For authenticated GUEST users, allow public routes, home page, profile, and favorites
   if (session && session.user?.role === 'GUEST') {
-    const allowedRoutes = ['/', '/profile']
+    const allowedRoutes = ['/', '/profile', '/games', '/about']
     if (!allowedRoutes.includes(pathname) && !pathname.startsWith('/api/favorites')) {
       return NextResponse.redirect(new URL('/', request.url))
     }
-    return NextResponse.next()
-  }
-  
-  // Public routes for anonymous users and admins
-  // Anonymous users can access: /, /games, /about
-  // Admins can access everything
-  const publicRoutes = ['/', '/games', '/about']
-  if (publicRoutes.includes(pathname) || pathname.startsWith('/api/')) {
     return NextResponse.next()
   }
   

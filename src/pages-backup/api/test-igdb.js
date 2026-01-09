@@ -20,7 +20,7 @@ import {
   fetchGenres,
   fetchThemes,
   testApiConnection
-} from '../../lib/api';
+} from '@/lib/api';
 
 export default async function handler(req, res) {
   const results = {

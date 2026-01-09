@@ -252,9 +252,26 @@ model User {
   
   // Relationships
   favorites     Favorite[]
+  passwordResets PasswordResetToken[]
   
   @@index([email])
   @@index([role])
+}
+
+// Password reset tokens
+model PasswordResetToken {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  token     String   @unique // Secure random token
+  expiresAt DateTime // Token expiration time (typically 1 hour)
+  used      Boolean  @default(false) // Whether token has been used
+  createdAt DateTime @default(now())
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([token])
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 // Waitlist email storage

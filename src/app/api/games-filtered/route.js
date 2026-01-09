@@ -10,8 +10,8 @@
  * - Original mood/time parameters
  */
 
-import { findGamesByMood } from '../../../lib/api-enhanced'
-import { getCachedSearch, cacheSearch } from '../../../lib/db-cache'
+import { findGamesByMood } from '@/lib/api-enhanced'
+import { getCachedSearch, cacheSearch } from '@/lib/db-cache'
 
 export async function POST(request) {
   try {

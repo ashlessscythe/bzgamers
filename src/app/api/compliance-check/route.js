@@ -10,7 +10,7 @@
  * Access this endpoint at: /api/compliance-check
  */
 
-import complianceChecker from '../../../lib/compliance-checker'
+import complianceChecker from '@/lib/compliance-checker'
 
 export async function GET() {
   try {

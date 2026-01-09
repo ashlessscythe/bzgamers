@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server'
-import { auth } from '../../../../lib/auth-config'
+import { auth } from '@/lib/auth-config'
 import { Resend } from 'resend'
-import { PrismaClient } from '../../../../generated/prisma'
-import { getWaitlistWelcomeEmail } from '../../../../lib/email-templates'
+import { PrismaClient } from '@/generated/prisma'
+import { getWaitlistWelcomeEmail } from '@/lib/email-templates'
 
 const prisma = new PrismaClient()
 const resend = new Resend(process.env.RESEND_API_KEY)

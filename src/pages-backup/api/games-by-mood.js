@@ -5,7 +5,7 @@
  * mood, time available, and genre preferences.
  */
 
-import { findGamesByMood } from '../../lib/api'
+import { findGamesByMood } from '@/lib/api'
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {

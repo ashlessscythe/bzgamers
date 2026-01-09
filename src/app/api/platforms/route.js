@@ -5,7 +5,7 @@
  * This keeps the API credentials secure on the server side.
  */
 
-import { fetchPlatforms } from '../../../lib/api-enhanced'
+import { fetchPlatforms } from '@/lib/api-enhanced'
 
 export async function GET() {
   try {

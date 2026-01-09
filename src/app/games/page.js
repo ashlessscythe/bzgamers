@@ -3,9 +3,9 @@
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
-import GameResults from '../../components/GameResults'
-import GoToTopButton from '../../components/GoToTopButton'
-import { getUserFriendlyMessage } from '../../lib/error-handler'
+import GameResults from '@/components/GameResults'
+import GoToTopButton from '@/components/GoToTopButton'
+import { getUserFriendlyMessage } from '@/lib/error-handler'
 
 // Available mood options - common ones first
 const COMMON_MOOD_OPTIONS = [
@@ -116,6 +116,14 @@ export default function Games() {
       try {
         const response = await fetch('/api/genres')
         if (response.ok) {
+          // Check if response is JSON before parsing
+          const contentType = response.headers.get('content-type')
+          if (!contentType || !contentType.includes('application/json')) {
+            const text = await response.text()
+            console.error('Non-JSON response from genres API:', text)
+            // Fallback to hardcoded genres if API fails
+            return
+          }
           const genresData = await response.json()
           setGenres(genresData)
         }
@@ -377,6 +385,14 @@ export default function Games() {
       
       if (!response.ok) {
         throw new Error('Failed to find games')
+      }
+      
+      // Check if response is JSON before parsing
+      const contentType = response.headers.get('content-type')
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text()
+        console.error('Non-JSON response from games API:', text)
+        throw new Error('Server returned an invalid response. Please try again.')
       }
       
       const gameResults = await response.json()

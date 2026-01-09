@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { signIn } from 'next-auth/react'
 import { motion, AnimatePresence } from 'framer-motion'
+import Link from 'next/link'
 
 export default function AuthModal({ isOpen, onClose, initialMode = 'signin' }) {
   const [mode, setMode] = useState(initialMode) // 'signin' or 'signup'
@@ -273,9 +274,20 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'signin' }) {
               </div>
 
               <div>
-                <label htmlFor="password" className="block text-sm font-medium mb-2 text-gray-900 dark:text-gray-100">
-                  Password
-                </label>
+                <div className="flex items-center justify-between mb-2">
+                  <label htmlFor="password" className="block text-sm font-medium text-gray-900 dark:text-gray-100">
+                    Password
+                  </label>
+                  {mode === 'signin' && (
+                    <Link 
+                      href="/auth/forgot-password"
+                      onClick={handleClose}
+                      className="text-sm text-primary dark:text-blue-400 dark:hover:text-blue-300 hover:underline"
+                    >
+                      Forgot password?
+                    </Link>
+                  )}
+                </div>
                 <input
                   id="password"
                   type="password"

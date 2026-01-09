@@ -5,12 +5,22 @@
  * mood, time available, and genre preferences.
  */
 
-import { findGamesByMood } from '../../../lib/api'
-import { getCachedSearch, cacheSearch } from '../../../lib/db-cache'
+import { findGamesByMood } from '@/lib/api'
+import { getCachedSearch, cacheSearch } from '@/lib/db-cache'
 
 export async function POST(request) {
   try {
-    const { mood, timeAvailable, genre, offset = 0 } = await request.json()
+    let body
+    try {
+      body = await request.json()
+    } catch (parseError) {
+      return Response.json(
+        { error: 'Invalid request body. Expected JSON.' },
+        { status: 400 }
+      )
+    }
+    
+    const { mood, timeAvailable, genre, offset = 0 } = body
     const params = { mood, timeAvailable, genre, offset }
 
     // 1. Try to get cached results (only for first page)

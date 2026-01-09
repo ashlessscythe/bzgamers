@@ -5,7 +5,7 @@
  * This keeps the API credentials secure on the server side.
  */
 
-import { fetchGenres } from '../../lib/api'
+import { fetchGenres } from '@/lib/api'
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {

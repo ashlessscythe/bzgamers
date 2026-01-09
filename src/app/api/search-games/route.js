@@ -4,8 +4,8 @@
  * This endpoint searches for games by query string
  */
 
-import { searchGames } from '../../../lib/api'
-import { getCachedSearch, cacheSearch } from '../../../lib/db-cache'
+import { searchGames } from '@/lib/api'
+import { getCachedSearch, cacheSearch } from '@/lib/db-cache'
 
 export async function POST(request) {
   try {
