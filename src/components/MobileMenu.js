@@ -41,6 +41,8 @@ export default function MobileMenu() {
     { path: '/', label: 'Home' },
     { path: '/games', label: 'Find Games' },
     { path: '/about', label: 'About' },
+    // Add Profile link if user is authenticated
+    ...(session ? [{ path: '/profile', label: 'My Profile' }] : []),
     // Add Admin link if user is admin
     ...(session?.user?.role === 'ADMIN' ? [{ path: '/admin', label: 'Admin' }] : [])
   ]

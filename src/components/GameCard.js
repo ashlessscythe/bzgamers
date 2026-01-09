@@ -1,11 +1,17 @@
 "use client"
 
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
+import { useSession } from 'next-auth/react'
 
 /**
  * GameCard component for displaying individual game information
  */
-export default function GameCard({ game }) {
+export default function GameCard({ game, onFavoriteChange }) {
+  const { data: session, status } = useSession()
+  const [isFavorited, setIsFavorited] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [showAuthMessage, setShowAuthMessage] = useState(false)
   // Safety check for undefined game
   if (!game) {
     return (
@@ -51,6 +57,79 @@ export default function GameCard({ game }) {
     return 'https://via.placeholder.com/264x374?text=No+Image'
   }
 
+  // Check if game is favorited on mount
+  useEffect(() => {
+    if (status === 'authenticated' && game?.id) {
+      checkFavoriteStatus()
+    }
+  }, [status, game?.id])
+
+  const checkFavoriteStatus = async () => {
+    if (!game?.id || status !== 'authenticated') return
+
+    try {
+      const response = await fetch('/api/favorites/check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ gameIds: [game.id] })
+      })
+      const data = await response.json()
+      if (data.success) {
+        setIsFavorited(data.favoritedGameIds.includes(game.id))
+      }
+    } catch (error) {
+      console.error('Error checking favorite status:', error)
+    }
+  }
+
+  const handleFavoriteToggle = async (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+
+    if (status !== 'authenticated') {
+      setShowAuthMessage(true)
+      setTimeout(() => setShowAuthMessage(false), 3000)
+      return
+    }
+
+    if (!game?.id || isLoading) return
+
+    setIsLoading(true)
+    try {
+      if (isFavorited) {
+        // Remove from favorites
+        const response = await fetch(`/api/favorites?gameId=${game.id}`, {
+          method: 'DELETE'
+        })
+        const data = await response.json()
+        if (data.success) {
+          setIsFavorited(false)
+          if (onFavoriteChange) onFavoriteChange(game.id, false)
+        }
+      } else {
+        // Add to favorites
+        const response = await fetch('/api/favorites', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            gameId: game.id,
+            gameName: game.name,
+            gameData: game
+          })
+        })
+        const data = await response.json()
+        if (data.success) {
+          setIsFavorited(true)
+          if (onFavoriteChange) onFavoriteChange(game.id, true)
+        }
+      }
+    } catch (error) {
+      console.error('Error toggling favorite:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   return (
     <motion.div
       className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden"
@@ -68,6 +147,42 @@ export default function GameCard({ game }) {
           <div className="absolute top-2 right-2 bg-primary text-white rounded-full w-10 h-10 flex items-center justify-center font-bold">
             {Math.round(game.total_rating)}
           </div>
+        )}
+        {/* Favorite button */}
+        <button
+          onClick={handleFavoriteToggle}
+          disabled={isLoading}
+          className={`absolute top-2 left-2 p-2 rounded-full transition-all ${
+            isFavorited
+              ? 'bg-red-500 text-white hover:bg-red-600'
+              : 'bg-white/90 dark:bg-gray-800/90 text-gray-600 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-800'
+          } ${isLoading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+          title={status === 'authenticated' 
+            ? (isFavorited ? 'Remove from favorites' : 'Add to favorites')
+            : 'Sign in to add to favorites'
+          }
+        >
+          <svg 
+            xmlns="http://www.w3.org/2000/svg" 
+            className={`h-5 w-5 ${isFavorited ? 'fill-current' : ''}`}
+            viewBox="0 0 24 24" 
+            stroke="currentColor" 
+            strokeWidth={isFavorited ? 0 : 2}
+            fill={isFavorited ? 'currentColor' : 'none'}
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+          </svg>
+        </button>
+        {/* Auth message tooltip */}
+        {showAuthMessage && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="absolute top-12 left-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-xs px-3 py-2 rounded-lg shadow-lg z-10 whitespace-nowrap"
+          >
+            Sign in to add favorites
+          </motion.div>
         )}
       </div>
       
@@ -106,7 +221,7 @@ export default function GameCard({ game }) {
           {game.summary || 'No description available.'}
         </p>
         
-        <div className="flex flex-col items-center mt-4">
+        <div className="flex flex-col items-center mt-4 gap-2">
           <a 
             href={game.url || '#'} 
             target="_blank" 
@@ -118,7 +233,12 @@ export default function GameCard({ game }) {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
             </svg>
           </a>
-          <span className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center block">Powered by IGDB</span>
+          {status !== 'authenticated' && (
+            <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
+              <span className="text-primary">Sign in</span> or <span className="text-primary">create an account</span> to save favorites
+            </p>
+          )}
+          <span className="text-xs text-gray-500 dark:text-gray-400 text-center block">Powered by IGDB</span>
         </div>
       </div>
     </motion.div>

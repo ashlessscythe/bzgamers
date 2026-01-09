@@ -23,6 +23,18 @@ export async function proxy(request) {
   // Check authentication
   const session = await auth()
   
+  // Profile and favorites routes - require authentication
+  if (pathname.startsWith('/profile') || pathname.startsWith('/api/favorites')) {
+    if (!session) {
+      // Redirect to home for profile page, allow API to return 401
+      if (pathname.startsWith('/profile')) {
+        return NextResponse.redirect(new URL('/', request.url))
+      }
+      // API will return 401, but we allow the request through
+    }
+    return NextResponse.next()
+  }
+  
   // Admin-only routes
   if (pathname.startsWith('/admin') || pathname.startsWith('/api/admin')) {
     if (!session || session.user?.role !== 'ADMIN') {
@@ -31,9 +43,10 @@ export async function proxy(request) {
     return NextResponse.next()
   }
   
-  // For authenticated GUEST users, only allow home page
+  // For authenticated GUEST users, allow home page, profile, and favorites
   if (session && session.user?.role === 'GUEST') {
-    if (pathname !== '/') {
+    const allowedRoutes = ['/', '/profile']
+    if (!allowedRoutes.includes(pathname) && !pathname.startsWith('/api/favorites')) {
       return NextResponse.redirect(new URL('/', request.url))
     }
     return NextResponse.next()

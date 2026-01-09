@@ -139,7 +139,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'signin' }) {
             </svg>
           </button>
 
-          <h2 className="text-3xl font-bold mb-2 text-center">
+          <h2 className="text-3xl font-bold mb-2 text-center text-gray-900 dark:text-gray-100">
             {mode === 'signin' ? 'Sign In' : 'Sign Up'}
           </h2>
           <p className="text-gray-600 dark:text-gray-400 text-center mb-6">
@@ -163,7 +163,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'signin' }) {
             <form onSubmit={mode === 'signin' ? handleSignIn : handleSignUp} className="space-y-4">
               {mode === 'signup' && (
                 <div>
-                  <label htmlFor="name" className="block text-sm font-medium mb-2">
+                  <label htmlFor="name" className="block text-sm font-medium mb-2 text-gray-900 dark:text-gray-100">
                     Name (optional)
                   </label>
                   <input
@@ -178,7 +178,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'signin' }) {
               )}
 
               <div>
-                <label htmlFor="email" className="block text-sm font-medium mb-2">
+                <label htmlFor="email" className="block text-sm font-medium mb-2 text-gray-900 dark:text-gray-100">
                   Email
                 </label>
                 <input
@@ -193,7 +193,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'signin' }) {
               </div>
 
               <div>
-                <label htmlFor="password" className="block text-sm font-medium mb-2">
+                <label htmlFor="password" className="block text-sm font-medium mb-2 text-gray-900 dark:text-gray-100">
                   Password
                 </label>
                 <input
@@ -239,7 +239,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'signin' }) {
                 setError('')
                 setPassword('')
               }}
-              className="text-sm text-primary hover:underline"
+              className="text-sm text-primary dark:text-blue-400 dark:hover:text-blue-300 hover:underline"
             >
               {mode === 'signin' 
                 ? "Don't have an account? Sign up" 

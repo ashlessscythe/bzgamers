@@ -250,6 +250,9 @@ model User {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   
+  // Relationships
+  favorites     Favorite[]
+  
   @@index([email])
   @@index([role])
 }
@@ -264,6 +267,23 @@ model WaitlistEmail {
   
   @@index([email])
   @@index([notified])
+  @@index([createdAt])
+}
+
+// User favorites - games saved by users
+model Favorite {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  gameId    Int      // IGDB game ID
+  gameName  String?  // Store game name for quick access
+  gameData  Json?    // Store full game data as JSON for quick access
+  createdAt DateTime @default(now())
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, gameId])
+  @@index([userId])
+  @@index([gameId])
   @@index([createdAt])
 }
 

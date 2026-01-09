@@ -56,6 +56,14 @@ export default function Layout({ children }) {
             >
               About
             </Link>
+            {session && (
+              <Link 
+                href="/profile" 
+                className={`hover:text-primary transition-colors ${isActive('/profile') ? 'text-primary font-medium' : ''}`}
+              >
+                My Profile
+              </Link>
+            )}
             {session?.user?.role === 'ADMIN' && (
               <Link 
                 href="/admin" 
