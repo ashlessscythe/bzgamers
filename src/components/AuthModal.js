@@ -59,31 +59,66 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'signin' }) {
       const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY
       const widgetContainer = document.getElementById('turnstile-widget')
       
-      if (!siteKey || !widgetContainer || !window.turnstile) {
+     if (!siteKey) {
+        console.error('NEXT_PUBLIC_TURNSTILE_SITE_KEY is not set')
+        setError('Captcha configuration error. Please contact support.')
         return false
       }
-
+      
+      if (!widgetContainer) {
+        console.warn('Turnstile widget container not found')
+        return false
+      }
+      
+      if (!window.turnstile) {
+        console.warn('Turnstile API not available yet')
+        return false
+      }
+ 
       // Don't re-render if widget already exists
       if (turnstileWidgetId.current !== null) {
         return true
+      }
+      
+      // Ensure container is visible and has proper dimensions
+      if (widgetContainer.offsetWidth === 0 || widgetContainer.offsetHeight === 0) {
+        console.warn('Turnstile widget container has no dimensions')
+        return false
       }
 
       try {
         turnstileWidgetId.current = window.turnstile.render('#turnstile-widget', {
           sitekey: siteKey,
+          theme: 'auto', // Automatically match light/dark theme
+          size: 'normal',
           callback: (token) => {
-            setTurnstileToken(token)
+            console.log('Turnstile callback received, token length:', token?.length)
+            if (token) {
+              setTurnstileToken(token)
+              setError('') // Clear any previous errors
+            }
           },
-          'error-callback': () => {
+          'error-callback': (error) => {
+            console.error('Turnstile error callback:', error)
             setTurnstileToken('')
+            // Don't set error here - let user try again
+            // The widget will show its own error state
           },
           'expired-callback': () => {
+            console.warn('Turnstile token expired')
             setTurnstileToken('')
           },
+          'timeout-callback': () => {
+            console.warn('Turnstile verification timed out')
+            setTurnstileToken('')
+            setError('Captcha verification timed out. Please try again.')
+          },
         })
+        console.log('Turnstile widget rendered successfully with site key:', siteKey ? `${siteKey.substring(0, 8)}...` : 'missing')
         return true
       } catch (e) {
         console.error('Turnstile render error:', e)
+        setError('Failed to load captcha. Please refresh the page.')
         return false
       }
     }
@@ -109,18 +144,22 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'signin' }) {
       if (window.turnstile && turnstileScriptLoaded.current) {
         turnstileInitTimeout.current = setTimeout(() => {
           tryInit()
-        }, 200)
+        }, 500) // Increased delay to avoid rapid retries
       } else {
         // Wait for script to load
+        let checkCount = 0
+        const maxChecks = 50 // 5 seconds max (50 * 100ms)
         const checkScript = setInterval(() => {
-          if (window.turnstile && turnstileScriptLoaded.current) {
+          checkCount++
+          if ((window.turnstile && turnstileScriptLoaded.current) || checkCount >= maxChecks) {
             clearInterval(checkScript)
-            tryInit()
+            if (checkCount < maxChecks) {
+              tryInit()
+            } else {
+              console.error('Turnstile script failed to load after timeout')
+            }
           }
         }, 100)
-        
-        // Cleanup interval after 5 seconds
-        setTimeout(() => clearInterval(checkScript), 5000)
       }
     }
 
