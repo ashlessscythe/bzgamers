@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { signIn } from 'next-auth/react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
+import Script from 'next/script'
 
 export default function AuthModal({ isOpen, onClose, initialMode = 'signin' }) {
   const [mode, setMode] = useState(initialMode) // 'signin' or 'signup'
@@ -16,61 +17,120 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'signin' }) {
   const [success, setSuccess] = useState(false)
   const [turnstileToken, setTurnstileToken] = useState('')
   const turnstileWidgetId = useRef(null)
+  const turnstileScriptLoaded = useRef(false)
+  const turnstileInitTimeout = useRef(null)
+  const turnstileInitAttempts = useRef(0)
   
-  // Load Turnstile script
-  useEffect(() => {
-    if (typeof window !== 'undefined' && !window.turnstile) {
-      const script = document.createElement('script')
-      script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js'
-      script.async = true
-      script.defer = true
-      document.body.appendChild(script)
-      
-      return () => {
-        // Cleanup script on unmount
-        const existingScript = document.querySelector('script[src="https://challenges.cloudflare.com/turnstile/v0/api.js"]')
-        if (existingScript) {
-          document.body.removeChild(existingScript)
-        }
-      }
-    }
-  }, [])
+  // Track when Turnstile script is loaded
+  const handleTurnstileLoad = () => {
+    turnstileScriptLoaded.current = true
+  }
 
   // Initialize/reset Turnstile widget when modal opens or mode changes
   useEffect(() => {
-    if (isOpen && mode === 'signup' && window.turnstile) {
-      const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY
-      if (siteKey && document.getElementById('turnstile-widget')) {
-        // Remove existing widget if any
-        if (turnstileWidgetId.current !== null) {
+    // Clear any pending timeout
+    if (turnstileInitTimeout.current) {
+      clearTimeout(turnstileInitTimeout.current)
+      turnstileInitTimeout.current = null
+    }
+
+    // Cleanup function
+    const cleanup = () => {
+      if (turnstileWidgetId.current !== null && window.turnstile) {
+        try {
           window.turnstile.remove(turnstileWidgetId.current)
-          turnstileWidgetId.current = null
+        } catch (e) {
+          // Ignore errors during cleanup
         }
-        
-        // Render new widget
-        setTimeout(() => {
-          if (document.getElementById('turnstile-widget')) {
-            turnstileWidgetId.current = window.turnstile.render('#turnstile-widget', {
-              sitekey: siteKey,
-              callback: (token) => {
-                setTurnstileToken(token)
-              },
-              'error-callback': () => {
-                setTurnstileToken('')
-              },
-              'expired-callback': () => {
-                setTurnstileToken('')
-              },
-            })
-          }
-        }, 100)
+        turnstileWidgetId.current = null
       }
-    } else if (turnstileWidgetId.current !== null && window.turnstile) {
-      // Remove widget when switching to sign in or closing
-      window.turnstile.remove(turnstileWidgetId.current)
-      turnstileWidgetId.current = null
       setTurnstileToken('')
     }
+
+    // If not signup mode or modal closed, cleanup
+    if (!isOpen || mode !== 'signup') {
+      cleanup()
+      turnstileInitAttempts.current = 0
+      return cleanup
+    }
+
+    // Wait for script to load and DOM to be ready
+    const initWidget = () => {
+      const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY
+      const widgetContainer = document.getElementById('turnstile-widget')
+      
+      if (!siteKey || !widgetContainer || !window.turnstile) {
+        return false
+      }
+
+      // Don't re-render if widget already exists
+      if (turnstileWidgetId.current !== null) {
+        return true
+      }
+
+      try {
+        turnstileWidgetId.current = window.turnstile.render('#turnstile-widget', {
+          sitekey: siteKey,
+          callback: (token) => {
+            setTurnstileToken(token)
+          },
+          'error-callback': () => {
+            setTurnstileToken('')
+          },
+          'expired-callback': () => {
+            setTurnstileToken('')
+          },
+        })
+        return true
+      } catch (e) {
+        console.error('Turnstile render error:', e)
+        return false
+      }
+    }
+
+    // Try to initialize with retry logic
+    const tryInit = () => {
+      // Reset attempts if widget successfully initialized
+      if (initWidget()) {
+        turnstileInitAttempts.current = 0
+        return
+      }
+      
+      // Limit retry attempts to prevent infinite loops
+      if (turnstileInitAttempts.current >= 10) {
+        console.warn('Turnstile widget initialization failed after multiple attempts')
+        turnstileInitAttempts.current = 0
+        return
+      }
+      
+      turnstileInitAttempts.current++
+      
+      // Retry if script not loaded or container not ready
+      if (window.turnstile && turnstileScriptLoaded.current) {
+        turnstileInitTimeout.current = setTimeout(() => {
+          tryInit()
+        }, 200)
+      } else {
+        // Wait for script to load
+        const checkScript = setInterval(() => {
+          if (window.turnstile && turnstileScriptLoaded.current) {
+            clearInterval(checkScript)
+            tryInit()
+          }
+        }, 100)
+        
+        // Cleanup interval after 5 seconds
+        setTimeout(() => clearInterval(checkScript), 5000)
+      }
+    }
+
+    // Small delay to ensure DOM is ready
+    turnstileInitAttempts.current = 0
+    turnstileInitTimeout.current = setTimeout(() => {
+      tryInit()
+    }, 100)
+
+    return cleanup
   }, [isOpen, mode])
 
   // Update mode when initialMode changes (e.g., when switching between signin/signup buttons)
@@ -182,9 +242,18 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'signin' }) {
     setSuccess(false)
     setTurnstileToken('')
     setMode('signin')
+    // Clear timeout
+    if (turnstileInitTimeout.current) {
+      clearTimeout(turnstileInitTimeout.current)
+      turnstileInitTimeout.current = null
+    }
     // Remove Turnstile widget
     if (turnstileWidgetId.current !== null && window.turnstile) {
-      window.turnstile.remove(turnstileWidgetId.current)
+      try {
+        window.turnstile.remove(turnstileWidgetId.current)
+      } catch (e) {
+        // Ignore errors during cleanup
+      }
       turnstileWidgetId.current = null
     }
     onClose()
@@ -193,8 +262,14 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'signin' }) {
   if (!isOpen) return null
 
   return (
-    <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <>
+      <Script
+        src="https://challenges.cloudflare.com/turnstile/v0/api.js"
+        strategy="lazyOnload"
+        onLoad={handleTurnstileLoad}
+      />
+      <AnimatePresence>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         {/* Backdrop */}
         <motion.div
           initial={{ opacity: 0 }}
@@ -244,11 +319,11 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'signin' }) {
             <form onSubmit={mode === 'signin' ? handleSignIn : handleSignUp} className="space-y-4">
               {mode === 'signup' && (
                 <div>
-                  <label htmlFor="name" className="block text-sm font-medium mb-2 text-gray-900 dark:text-gray-100">
+                  <label htmlFor="auth-modal-name" className="block text-sm font-medium mb-2 text-gray-900 dark:text-gray-100">
                     Name (optional)
                   </label>
                   <input
-                    id="name"
+                    id="auth-modal-name"
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
@@ -259,11 +334,11 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'signin' }) {
               )}
 
               <div>
-                <label htmlFor="email" className="block text-sm font-medium mb-2 text-gray-900 dark:text-gray-100">
+                <label htmlFor="auth-modal-email" className="block text-sm font-medium mb-2 text-gray-900 dark:text-gray-100">
                   Email
                 </label>
                 <input
-                  id="email"
+                  id="auth-modal-email"
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -275,7 +350,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'signin' }) {
 
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <label htmlFor="password" className="block text-sm font-medium text-gray-900 dark:text-gray-100">
+                  <label htmlFor="auth-modal-password" className="block text-sm font-medium text-gray-900 dark:text-gray-100">
                     Password
                   </label>
                   {mode === 'signin' && (
@@ -289,7 +364,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'signin' }) {
                   )}
                 </div>
                 <input
-                  id="password"
+                  id="auth-modal-password"
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -348,6 +423,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'signin' }) {
         </motion.div>
       </div>
     </AnimatePresence>
+    </>
   )
 }
 
