@@ -1,16 +1,20 @@
 "use client"
 
 import { useState, useEffect } from 'react'
-import { useSession, signOut } from 'next-auth/react'
+import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 
 export default function AdminPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
+  const [activeTab, setActiveTab] = useState('waitlist') // 'waitlist' or 'users'
   const [waitlist, setWaitlist] = useState([])
   const [stats, setStats] = useState({ total: 0, notified: 0, unnotified: 0 })
+  const [users, setUsers] = useState([])
+  const [userStats, setUserStats] = useState({ total: 0, admins: 0, guests: 0 })
   const [isLoading, setIsLoading] = useState(true)
+  const [isLoadingUsers, setIsLoadingUsers] = useState(false)
   const [error, setError] = useState('')
   const [selectedEmails, setSelectedEmails] = useState([])
   const [showEmailForm, setShowEmailForm] = useState(false)
@@ -19,6 +23,7 @@ export default function AdminPage() {
   const [useTemplate, setUseTemplate] = useState(false)
   const [isSending, setIsSending] = useState(false)
   const [sendStatus, setSendStatus] = useState(null)
+  const [updatingRoles, setUpdatingRoles] = useState({})
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -27,6 +32,7 @@ export default function AdminPage() {
       router.push('/')
     } else if (status === 'authenticated' && session?.user?.role === 'ADMIN') {
       fetchWaitlist()
+      fetchUsers()
     }
   }, [status, session, router])
 
@@ -63,6 +69,58 @@ export default function AdminPage() {
       setSelectedEmails([])
     } else {
       setSelectedEmails(waitlist.filter(e => !e.notified).map(e => e.id))
+    }
+  }
+
+  const fetchUsers = async () => {
+    try {
+      setIsLoadingUsers(true)
+      const response = await fetch('/api/admin/users')
+      const data = await response.json()
+      
+      if (data.success) {
+        setUsers(data.data)
+        setUserStats(data.stats)
+      } else {
+        setError('Failed to fetch users')
+      }
+    } catch (err) {
+      setError('Error fetching users')
+      console.error(err)
+    } finally {
+      setIsLoadingUsers(false)
+    }
+  }
+
+  const handleRoleChange = async (userId, newRole) => {
+    setUpdatingRoles(prev => ({ ...prev, [userId]: true }))
+    
+    try {
+      const response = await fetch(`/api/admin/users/${userId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role: newRole })
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        // Update the user in the local state
+        setUsers(prevUsers => 
+          prevUsers.map(user => 
+            user.id === userId ? { ...user, role: newRole } : user
+          )
+        )
+        // Refresh stats
+        fetchUsers()
+      } else {
+        alert(data.error || 'Failed to update user role')
+      }
+    } catch (err) {
+      alert('Error updating user role')
+      console.error(err)
+    } finally {
+      setUpdatingRoles(prev => ({ ...prev, [userId]: false }))
     }
   }
 
@@ -111,7 +169,7 @@ export default function AdminPage() {
     }
   }
 
-  if (status === 'loading' || isLoading) {
+  if (status === 'loading' || (isLoading && activeTab === 'waitlist') || (isLoadingUsers && activeTab === 'users')) {
     return (
       <div className="min-h-[calc(100vh-200px)] flex items-center justify-center">
         <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
@@ -128,23 +186,41 @@ export default function AdminPage() {
   return (
     <div className="min-h-[calc(100vh-200px)] p-4">
       <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-center mb-6">
+        <div className="mb-6">
           <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-          <div className="flex gap-4 items-center">
-            <span className="text-sm text-gray-600 dark:text-gray-400">
-              {session?.user?.email}
-            </span>
+        </div>
+
+        {/* Tabs */}
+        <div className="mb-6 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex gap-4">
             <button
-              onClick={() => signOut({ callbackUrl: '/' })}
-              className="btn-secondary px-4 py-2"
+              onClick={() => setActiveTab('waitlist')}
+              className={`px-4 py-2 font-medium border-b-2 transition-colors ${
+                activeTab === 'waitlist'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+              }`}
             >
-              Sign Out
+              Waitlist Management
+            </button>
+            <button
+              onClick={() => setActiveTab('users')}
+              className={`px-4 py-2 font-medium border-b-2 transition-colors ${
+                activeTab === 'users'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+              }`}
+            >
+              User Management
             </button>
           </div>
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        {/* Waitlist Tab Content */}
+        {activeTab === 'waitlist' && (
+          <>
+            {/* Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -354,6 +430,146 @@ export default function AdminPage() {
             )}
           </div>
         </div>
+          </>
+        )}
+
+        {/* User Management Tab Content */}
+        {activeTab === 'users' && (
+          <>
+            {/* User Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6"
+              >
+                <h3 className="text-sm text-gray-600 dark:text-gray-400 mb-2">Total Users</h3>
+                <p className="text-3xl font-bold text-primary">{userStats.total}</p>
+              </motion.div>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6"
+              >
+                <h3 className="text-sm text-gray-600 dark:text-gray-400 mb-2">Admins</h3>
+                <p className="text-3xl font-bold text-purple-600">{userStats.admins}</p>
+              </motion.div>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6"
+              >
+                <h3 className="text-sm text-gray-600 dark:text-gray-400 mb-2">Guests</h3>
+                <p className="text-3xl font-bold text-blue-600">{userStats.guests}</p>
+              </motion.div>
+            </div>
+
+            {/* Actions */}
+            <div className="mb-6 flex gap-4">
+              <button
+                onClick={fetchUsers}
+                className="btn-secondary px-6 py-2"
+              >
+                Refresh
+              </button>
+            </div>
+
+            {/* Users Table */}
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50 dark:bg-gray-700">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        ID
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        Email
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        Name
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        Role
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        Favorites
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        Email Verified
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        Created
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                    {users.map((user) => (
+                      <tr key={user.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <td className="px-6 py-4 text-sm text-gray-900 dark:text-gray-100">
+                          {user.id}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-900 dark:text-gray-100">
+                          {user.email}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
+                          {user.name || '-'}
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className={`px-2 py-1 text-xs rounded-full ${
+                            user.role === 'ADMIN'
+                              ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300'
+                              : 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300'
+                          }`}>
+                            {user.role}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
+                          {user._count?.favorites || 0}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
+                          {user.emailVerified ? (
+                            <span className="text-green-600 dark:text-green-400">✓ Verified</span>
+                          ) : (
+                            <span className="text-gray-400">Not verified</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
+                          {new Date(user.createdAt).toLocaleDateString()}
+                        </td>
+                        <td className="px-6 py-4">
+                          {updatingRoles[user.id] ? (
+                            <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                          ) : (
+                            <select
+                              value={user.role}
+                              onChange={(e) => handleRoleChange(user.id, e.target.value)}
+                              disabled={parseInt(session?.user?.id) === user.id}
+                              className="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              <option value="GUEST">GUEST</option>
+                              <option value="ADMIN">ADMIN</option>
+                            </select>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {users.length === 0 && (
+                  <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+                    No users found
+                  </div>
+                )}
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   )
