@@ -253,6 +253,7 @@ model User {
   // Relationships
   favorites     Favorite[]
   passwordResets PasswordResetToken[]
+  feedback      Feedback[]
   
   @@index([email])
   @@index([role])
@@ -301,6 +302,22 @@ model Favorite {
   @@unique([userId, gameId])
   @@index([userId])
   @@index([gameId])
+  @@index([createdAt])
+}
+
+// User feedback submissions
+model Feedback {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String
+  message   String   @db.Text
+  userId    Int?     // Optional: link to user if logged in
+  createdAt DateTime @default(now())
+  
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  
+  @@index([email])
+  @@index([userId])
   @@index([createdAt])
 }
 

@@ -7,6 +7,7 @@ import { useSession, signOut } from 'next-auth/react'
 import ThemeToggle from './ThemeToggle'
 import MobileMenu from './MobileMenu'
 import AuthModal from './AuthModal'
+import FeedbackModal from './FeedbackModal'
 import { SITE_NAME, GH_URL } from '../lib/config'
 
 /**
@@ -17,6 +18,7 @@ export default function Layout({ children }) {
   const { data: session, status } = useSession()
   const [authModalOpen, setAuthModalOpen] = useState(false)
   const [authModalMode, setAuthModalMode] = useState('signin')
+  const [feedbackModalOpen, setFeedbackModalOpen] = useState(false)
   const isActive = (path) => pathname === path
 
   const openSignIn = () => {
@@ -75,6 +77,33 @@ export default function Layout({ children }) {
           </nav>
           
           <div className="flex items-center space-x-4">
+            {/* Feedback Button - visible for all users */}
+            <button
+              onClick={() => setFeedbackModalOpen(true)}
+              className="relative p-2 rounded-full bg-primary/10 dark:bg-primary/20 text-primary hover:bg-primary/20 dark:hover:bg-primary/30 transition-all duration-200 hover:scale-110 active:scale-95 group"
+              aria-label="Send Feedback"
+              title="Tell the devs what you think!!!!"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5 transition-transform group-hover:rotate-12"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                />
+              </svg>
+              <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
+              </span>
+            </button>
+            
             {status === 'loading' ? (
               <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
             ) : session ? (
@@ -207,6 +236,11 @@ export default function Layout({ children }) {
         isOpen={authModalOpen} 
         onClose={() => setAuthModalOpen(false)}
         initialMode={authModalMode}
+      />
+      
+      <FeedbackModal 
+        isOpen={feedbackModalOpen} 
+        onClose={() => setFeedbackModalOpen(false)}
       />
     </div>
   )

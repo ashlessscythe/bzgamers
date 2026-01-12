@@ -8,14 +8,19 @@ import { motion } from 'framer-motion'
 export default function AdminPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
-  const [activeTab, setActiveTab] = useState('waitlist') // 'waitlist' or 'users'
+  const [activeTab, setActiveTab] = useState('waitlist') // 'waitlist', 'users', or 'feedback'
   const [waitlist, setWaitlist] = useState([])
   const [stats, setStats] = useState({ total: 0, notified: 0, unnotified: 0 })
   const [users, setUsers] = useState([])
   const [userStats, setUserStats] = useState({ total: 0, admins: 0, guests: 0 })
+  const [feedbacks, setFeedbacks] = useState([])
+  const [feedbackStats, setFeedbackStats] = useState({ total: 0, withUser: 0, anonymous: 0 })
   const [isLoading, setIsLoading] = useState(true)
   const [isLoadingUsers, setIsLoadingUsers] = useState(false)
+  const [isLoadingFeedback, setIsLoadingFeedback] = useState(false)
   const [error, setError] = useState('')
+  const [deletingFeedback, setDeletingFeedback] = useState({})
+  const [selectedFeedback, setSelectedFeedback] = useState(null)
   const [selectedEmails, setSelectedEmails] = useState([])
   const [showEmailForm, setShowEmailForm] = useState(false)
   const [emailSubject, setEmailSubject] = useState('')
@@ -33,6 +38,7 @@ export default function AdminPage() {
     } else if (status === 'authenticated' && session?.user?.role === 'ADMIN') {
       fetchWaitlist()
       fetchUsers()
+      fetchFeedbacks()
     }
   }, [status, session, router])
 
@@ -89,6 +95,54 @@ export default function AdminPage() {
       console.error(err)
     } finally {
       setIsLoadingUsers(false)
+    }
+  }
+
+  const fetchFeedbacks = async () => {
+    try {
+      setIsLoadingFeedback(true)
+      const response = await fetch('/api/admin/feedback')
+      const data = await response.json()
+      
+      if (data.success) {
+        setFeedbacks(data.data)
+        setFeedbackStats(data.stats)
+      } else {
+        setError('Failed to fetch feedback')
+      }
+    } catch (err) {
+      setError('Error fetching feedback')
+      console.error(err)
+    } finally {
+      setIsLoadingFeedback(false)
+    }
+  }
+
+  const handleDeleteFeedback = async (feedbackId) => {
+    if (!confirm('Are you sure you want to delete this feedback?')) {
+      return
+    }
+
+    setDeletingFeedback(prev => ({ ...prev, [feedbackId]: true }))
+    
+    try {
+      const response = await fetch(`/api/admin/feedback?id=${feedbackId}`, {
+        method: 'DELETE'
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        setFeedbacks(prev => prev.filter(f => f.id !== feedbackId))
+        fetchFeedbacks() // Refresh stats
+      } else {
+        alert(data.error || 'Failed to delete feedback')
+      }
+    } catch (err) {
+      alert('Error deleting feedback')
+      console.error(err)
+    } finally {
+      setDeletingFeedback(prev => ({ ...prev, [feedbackId]: false }))
     }
   }
 
@@ -169,7 +223,7 @@ export default function AdminPage() {
     }
   }
 
-  if (status === 'loading' || (isLoading && activeTab === 'waitlist') || (isLoadingUsers && activeTab === 'users')) {
+  if (status === 'loading' || (isLoading && activeTab === 'waitlist') || (isLoadingUsers && activeTab === 'users') || (isLoadingFeedback && activeTab === 'feedback')) {
     return (
       <div className="min-h-[calc(100vh-200px)] flex items-center justify-center">
         <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
@@ -212,6 +266,16 @@ export default function AdminPage() {
               }`}
             >
               User Management
+            </button>
+            <button
+              onClick={() => setActiveTab('feedback')}
+              className={`px-4 py-2 font-medium border-b-2 transition-colors ${
+                activeTab === 'feedback'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+              }`}
+            >
+              Feedback Management
             </button>
           </div>
         </div>
@@ -568,6 +632,247 @@ export default function AdminPage() {
                 )}
               </div>
             </div>
+          </>
+        )}
+
+        {/* Feedback Management Tab Content */}
+        {activeTab === 'feedback' && (
+          <>
+            {/* Feedback Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6"
+              >
+                <h3 className="text-sm text-gray-600 dark:text-gray-400 mb-2">Total Feedback</h3>
+                <p className="text-3xl font-bold text-primary">{feedbackStats.total}</p>
+              </motion.div>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6"
+              >
+                <h3 className="text-sm text-gray-600 dark:text-gray-400 mb-2">From Users</h3>
+                <p className="text-3xl font-bold text-blue-600">{feedbackStats.withUser}</p>
+              </motion.div>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6"
+              >
+                <h3 className="text-sm text-gray-600 dark:text-gray-400 mb-2">Anonymous</h3>
+                <p className="text-3xl font-bold text-orange-600">{feedbackStats.anonymous}</p>
+              </motion.div>
+            </div>
+
+            {/* Actions */}
+            <div className="mb-6 flex gap-4">
+              <button
+                onClick={fetchFeedbacks}
+                className="btn-secondary px-6 py-2"
+              >
+                Refresh
+              </button>
+            </div>
+
+            {/* Feedback Table */}
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50 dark:bg-gray-700">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        ID
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        Name
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        Email
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        User
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        Message
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        Submitted
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                    {feedbacks.map((feedback) => (
+                      <tr key={feedback.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <td className="px-6 py-4 text-sm text-gray-900 dark:text-gray-100">
+                          {feedback.id}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-900 dark:text-gray-100">
+                          {feedback.name}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-900 dark:text-gray-100">
+                          <a 
+                            href={`mailto:${feedback.email}`}
+                            className="text-primary hover:underline"
+                          >
+                            {feedback.email}
+                          </a>
+                        </td>
+                        <td className="px-6 py-4">
+                          {feedback.user ? (
+                            <span className="px-2 py-1 text-xs rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300">
+                              {feedback.user.name || feedback.user.email}
+                            </span>
+                          ) : (
+                            <span className="px-2 py-1 text-xs rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
+                              Anonymous
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400 max-w-md">
+                          <button
+                            onClick={() => setSelectedFeedback(feedback)}
+                            className="text-left truncate hover:text-primary transition-colors"
+                            title="Click to view full message"
+                          >
+                            {feedback.message.length > 100 
+                              ? `${feedback.message.substring(0, 100)}...` 
+                              : feedback.message}
+                          </button>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
+                          {new Date(feedback.createdAt).toLocaleString()}
+                        </td>
+                        <td className="px-6 py-4">
+                          {deletingFeedback[feedback.id] ? (
+                            <div className="w-5 h-5 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
+                          ) : (
+                            <button
+                              onClick={() => handleDeleteFeedback(feedback.id)}
+                              className="px-3 py-1 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                              title="Delete feedback"
+                            >
+                              Delete
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {feedbacks.length === 0 && (
+                  <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+                    No feedback submissions yet
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Feedback Detail Modal */}
+            {selectedFeedback && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 dark:bg-black/70 backdrop-blur-sm"
+                onClick={() => setSelectedFeedback(null)}
+              >
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  onClick={(e) => e.stopPropagation()}
+                  className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+                >
+                  <div className="p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                        Feedback Details
+                      </h2>
+                      <button
+                        onClick={() => setSelectedFeedback(null)}
+                        className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+                        aria-label="Close"
+                      >
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div>
+                        <label className="text-sm font-medium text-gray-600 dark:text-gray-400">ID</label>
+                        <p className="text-gray-900 dark:text-white">{selectedFeedback.id}</p>
+                      </div>
+
+                      <div>
+                        <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Name</label>
+                        <p className="text-gray-900 dark:text-white">{selectedFeedback.name}</p>
+                      </div>
+
+                      <div>
+                        <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Email</label>
+                        <p className="text-gray-900 dark:text-white">
+                          <a 
+                            href={`mailto:${selectedFeedback.email}`}
+                            className="text-primary hover:underline"
+                          >
+                            {selectedFeedback.email}
+                          </a>
+                        </p>
+                      </div>
+
+                      {selectedFeedback.user && (
+                        <div>
+                          <label className="text-sm font-medium text-gray-600 dark:text-gray-400">User Account</label>
+                          <p className="text-gray-900 dark:text-white">
+                            {selectedFeedback.user.name || selectedFeedback.user.email} (ID: {selectedFeedback.user.id})
+                          </p>
+                        </div>
+                      )}
+
+                      <div>
+                        <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Message</label>
+                        <p className="text-gray-900 dark:text-white whitespace-pre-wrap bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                          {selectedFeedback.message}
+                        </p>
+                      </div>
+
+                      <div>
+                        <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Submitted</label>
+                        <p className="text-gray-900 dark:text-white">
+                          {new Date(selectedFeedback.createdAt).toLocaleString()}
+                        </p>
+                      </div>
+
+                      <div className="flex gap-4 pt-4">
+                        <button
+                          onClick={() => {
+                            handleDeleteFeedback(selectedFeedback.id)
+                            setSelectedFeedback(null)
+                          }}
+                          disabled={deletingFeedback[selectedFeedback.id]}
+                          className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          {deletingFeedback[selectedFeedback.id] ? 'Deleting...' : 'Delete Feedback'}
+                        </button>
+                        <button
+                          onClick={() => setSelectedFeedback(null)}
+                          className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                        >
+                          Close
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
           </>
         )}
       </div>
