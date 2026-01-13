@@ -6,7 +6,11 @@
     "dev": "next dev",
     "build": "npx prisma generate && next build",
     "start": "npx prisma migrate deploy && next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "seed": "node scripts/seed.js"
+  },
+  "prisma": {
+    "seed": "node scripts/seed.js"
   },
   "dependencies": {
     "@prisma/client": "^6.10.1",
@@ -21,6 +25,7 @@
     "resend": "^6.4.2"
   },
   "devDependencies": {
+    "@faker-js/faker": "^10.2.0",
     "autoprefixer": "^10.4.16",
     "baseline-browser-mapping": "^2.9.13",
     "eslint": "^8.53.0",

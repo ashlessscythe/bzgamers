@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
-import GameCard from '../../components/GameCard'
+import CompactGameCard from '../../components/CompactGameCard'
 import AuthModal from '../../components/AuthModal'
 
 export default function ProfilePage() {
@@ -28,15 +28,17 @@ export default function ProfilePage() {
       const response = await fetch('/api/favorites')
       const data = await response.json()
       if (data.success) {
-        // Extract game data from favorites
+        // Extract game data from favorites, preserving favorite ID for unique keys
         const games = data.favorites.map(fav => {
-          if (fav.gameData) {
-            return fav.gameData
-          }
-          // Fallback if gameData is not stored
-          return {
+          const gameData = fav.gameData || {
             id: fav.gameId,
             name: fav.gameName || 'Unknown Game'
+          }
+          // Add favorite ID to ensure unique keys
+          return {
+            ...gameData,
+            _favoriteId: fav.id, // Internal ID for React keys
+            _gameId: fav.gameId
           }
         })
         setFavorites(games)
@@ -138,7 +140,7 @@ export default function ProfilePage() {
             </div>
           ) : (
             <motion.div
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
               initial="hidden"
               animate="visible"
               variants={{
@@ -146,14 +148,14 @@ export default function ProfilePage() {
                 visible: {
                   opacity: 1,
                   transition: {
-                    staggerChildren: 0.1
+                    staggerChildren: 0.05
                   }
                 }
               }}
             >
-              {favorites.map((game) => (
-                <GameCard
-                  key={game.id}
+              {favorites.map((game, index) => (
+                <CompactGameCard
+                  key={game._favoriteId || game.id || `favorite-${index}`}
                   game={game}
                   onFavoriteChange={handleFavoriteChange}
                 />

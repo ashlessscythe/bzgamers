@@ -4,6 +4,9 @@ import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
+import FeedbackCard from '@/components/admin/FeedbackCard'
+import UserCard from '@/components/admin/UserCard'
+import WaitlistCard from '@/components/admin/WaitlistCard'
 
 export default function AdminPage() {
   const { data: session, status } = useSession()
@@ -424,8 +427,27 @@ export default function AdminPage() {
           </button>
         </div>
 
-        {/* Waitlist Table */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
+        {/* Waitlist Cards (Mobile) */}
+        <div className="md:hidden space-y-4">
+          {waitlist.length === 0 ? (
+            <div className="text-center py-12 text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 rounded-xl shadow-lg">
+              No emails on waitlist yet
+            </div>
+          ) : (
+            waitlist.map((email) => (
+              <WaitlistCard
+                key={email.id}
+                email={email}
+                onSelect={handleEmailSelect}
+                isSelected={selectedEmails.includes(email.id)}
+                canSelect={!email.notified}
+              />
+            ))
+          )}
+        </div>
+
+        {/* Waitlist Table (Desktop) */}
+        <div className="hidden md:block bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-50 dark:bg-gray-700">
@@ -540,8 +562,27 @@ export default function AdminPage() {
               </button>
             </div>
 
-            {/* Users Table */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
+            {/* Users Cards (Mobile) */}
+            <div className="md:hidden space-y-4">
+              {users.length === 0 ? (
+                <div className="text-center py-12 text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 rounded-xl shadow-lg">
+                  No users found
+                </div>
+              ) : (
+                users.map((user) => (
+                  <UserCard
+                    key={user.id}
+                    user={user}
+                    onRoleChange={handleRoleChange}
+                    isUpdating={updatingRoles[user.id]}
+                    currentUserId={session?.user?.id}
+                  />
+                ))
+              )}
+            </div>
+
+            {/* Users Table (Desktop) */}
+            <div className="hidden md:block bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead className="bg-gray-50 dark:bg-gray-700">
@@ -678,86 +719,124 @@ export default function AdminPage() {
               </button>
             </div>
 
-            {/* Feedback Table */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
+            {/* Feedback Cards (Mobile) */}
+            <div className="md:hidden space-y-4">
+              {feedbacks.length === 0 ? (
+                <div className="text-center py-12 text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 rounded-xl shadow-lg">
+                  No feedback submissions yet
+                </div>
+              ) : (
+                feedbacks.map((feedback) => (
+                  <FeedbackCard
+                    key={feedback.id}
+                    feedback={feedback}
+                    onView={setSelectedFeedback}
+                    onDelete={handleDeleteFeedback}
+                    isDeleting={deletingFeedback[feedback.id]}
+                  />
+                ))
+              )}
+            </div>
+
+            {/* Feedback Table (Desktop) */}
+            <div className="hidden md:block bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead className="bg-gray-50 dark:bg-gray-700">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                         ID
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        Name
+                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        Contact
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        Email
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                         User
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                         Message
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                         Submitted
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      <th className="px-6 py-4 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                         Actions
                       </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                     {feedbacks.map((feedback) => (
-                      <tr key={feedback.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                        <td className="px-6 py-4 text-sm text-gray-900 dark:text-gray-100">
-                          {feedback.id}
+                      <tr key={feedback.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                        <td className="px-6 py-5">
+                          <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                            #{feedback.id}
+                          </span>
                         </td>
-                        <td className="px-6 py-4 text-sm text-gray-900 dark:text-gray-100">
-                          {feedback.name}
+                        <td className="px-6 py-5">
+                          <div className="flex flex-col space-y-1">
+                            <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                              {feedback.name}
+                            </span>
+                            <a 
+                              href={`mailto:${feedback.email}`}
+                              className="text-sm text-primary hover:underline truncate max-w-xs"
+                              title={feedback.email}
+                            >
+                              {feedback.email}
+                            </a>
+                          </div>
                         </td>
-                        <td className="px-6 py-4 text-sm text-gray-900 dark:text-gray-100">
-                          <a 
-                            href={`mailto:${feedback.email}`}
-                            className="text-primary hover:underline"
-                          >
-                            {feedback.email}
-                          </a>
-                        </td>
-                        <td className="px-6 py-4">
+                        <td className="px-6 py-5">
                           {feedback.user ? (
-                            <span className="px-2 py-1 text-xs rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300">
+                            <span className="inline-flex items-center px-3 py-1 text-xs font-medium rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300">
                               {feedback.user.name || feedback.user.email}
                             </span>
                           ) : (
-                            <span className="px-2 py-1 text-xs rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
+                            <span className="inline-flex items-center px-3 py-1 text-xs font-medium rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
                               Anonymous
                             </span>
                           )}
                         </td>
-                        <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400 max-w-md">
+                        <td className="px-6 py-5 max-w-lg">
                           <button
                             onClick={() => setSelectedFeedback(feedback)}
-                            className="text-left truncate hover:text-primary transition-colors"
+                            className="text-left group"
                             title="Click to view full message"
                           >
-                            {feedback.message.length > 100 
-                              ? `${feedback.message.substring(0, 100)}...` 
-                              : feedback.message}
+                            <p className="text-sm text-gray-700 dark:text-gray-300 line-clamp-2 group-hover:text-primary transition-colors">
+                              {feedback.message}
+                            </p>
+                            {feedback.message.length > 120 && (
+                              <span className="text-xs text-primary mt-1 inline-block">
+                                Read more...
+                              </span>
+                            )}
                           </button>
                         </td>
-                        <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
-                          {new Date(feedback.createdAt).toLocaleString()}
+                        <td className="px-6 py-5">
+                          <div className="text-sm text-gray-600 dark:text-gray-400">
+                            <div className="font-medium">
+                              {new Date(feedback.createdAt).toLocaleDateString()}
+                            </div>
+                            <div className="text-xs text-gray-500 dark:text-gray-500">
+                              {new Date(feedback.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </div>
+                          </div>
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-6 py-5 text-right">
                           {deletingFeedback[feedback.id] ? (
-                            <div className="w-5 h-5 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
+                            <div className="inline-flex items-center justify-center w-8 h-8">
+                              <div className="w-5 h-5 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
+                            </div>
                           ) : (
                             <button
                               onClick={() => handleDeleteFeedback(feedback.id)}
-                              className="px-3 py-1 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                              className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                               title="Delete feedback"
                             >
+                              <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
                               Delete
                             </button>
                           )}
