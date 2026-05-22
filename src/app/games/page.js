@@ -492,15 +492,9 @@ export default function Games() {
         return
       }
       
-      // Apply default sorting (by release date descending)
-      const sortedResults = [...similarGames].sort((a, b) => {
-        const aValue = a.first_release_date || 0
-        const bValue = b.first_release_date || 0
-        return aValue < bValue ? 1 : -1 // Descending order (newest first)
-      })
-      
-      setResults(sortedResults)
-      setOriginalResults(sortedResults)
+      // Keep API similarity ranking (do not re-sort by release date)
+      setResults(similarGames)
+      setOriginalResults(similarGames)
       setShowResults(true)
     } catch (err) {
       console.error('Error finding similar games:', err)

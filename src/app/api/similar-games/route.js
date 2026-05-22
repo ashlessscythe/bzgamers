@@ -1,31 +1,151 @@
 /**
  * API route for finding similar games
- * 
- * This endpoint finds games similar to a given game, filtered by the same platforms
+ *
+ * Uses IGDB's curated similar_games when available, then supplements with
+ * candidates ranked by genre/theme/game-mode overlap (not just rating).
  */
 
 import { fetchGames } from '../../../lib/api'
 import { getCachedSearch, cacheSearch } from '../../../lib/db-cache'
 
+const PAGE_SIZE = 12
+const CANDIDATE_POOL = 60
+const IGDB_SIMILAR_BOOST = 1000
+const INDIE_GENRE_ID = 32
+
+const RESULT_FIELDS =
+  'name,cover.*,first_release_date,total_rating,summary,url,genres.*,themes.*,platforms.*,game_modes.*,player_perspectives.*'
+
+function idsFromRelation(items) {
+  if (!items?.length) return []
+  return items.map((item) => (typeof item === 'number' ? item : item.id)).filter(Boolean)
+}
+
+function scoreSimilarity(candidate, base) {
+  const baseGenreIds = new Set(idsFromRelation(base.genres))
+  const baseThemeIds = new Set(idsFromRelation(base.themes))
+  const baseModeIds = new Set(idsFromRelation(base.game_modes))
+  const basePerspectiveIds = new Set(idsFromRelation(base.player_perspectives))
+
+  const candidateGenreIds = idsFromRelation(candidate.genres)
+  const candidateThemeIds = idsFromRelation(candidate.themes)
+  const genreOverlapCount = candidateGenreIds.filter((id) => baseGenreIds.has(id)).length
+
+  // Require genre overlap when the base game has genres (themes alone are too broad)
+  if (baseGenreIds.size > 0) {
+    if (genreOverlapCount === 0) return -1
+    // One shared genre (e.g. "Adventure") is weak when the base has several
+    if (baseGenreIds.size >= 2 && genreOverlapCount < 2) return -1
+    // Indie-tagged games are usually a different slice than AAA action titles
+    if (baseGenreIds.has(INDIE_GENRE_ID) && !candidateGenreIds.includes(INDIE_GENRE_ID)) {
+      return -1
+    }
+  } else if (baseThemeIds.size > 0) {
+    if (!candidateThemeIds.some((id) => baseThemeIds.has(id))) return -1
+  } else {
+    return -1
+  }
+
+  let score = genreOverlapCount * 4
+  for (const id of candidateThemeIds) {
+    if (baseThemeIds.has(id)) score += 2
+  }
+  for (const id of idsFromRelation(candidate.game_modes)) {
+    if (baseModeIds.has(id)) score += 2
+  }
+  for (const id of idsFromRelation(candidate.player_perspectives)) {
+    if (basePerspectiveIds.has(id)) score += 1
+  }
+
+  return score
+}
+
+function orderByIdList(games, idOrder) {
+  const byId = new Map(games.map((g) => [g.id, g]))
+  return idOrder.map((id) => byId.get(id)).filter(Boolean)
+}
+
+function compareRanked(a, b) {
+  if (b.score !== a.score) return b.score - a.score
+  return (b.game.total_rating || 0) - (a.game.total_rating || 0)
+}
+
+async function buildRankedSimilarGames(baseGame, gameId) {
+  const platformIds = idsFromRelation(baseGame.platforms)
+  if (platformIds.length === 0) return []
+
+  const excludeId = Number(gameId)
+  const genreIds = idsFromRelation(baseGame.genres)
+  const themeIds = idsFromRelation(baseGame.themes)
+  const seen = new Set([excludeId])
+  const ranked = []
+
+  // 1. IGDB curated similar games (strong signal)
+  const similarGameIds = idsFromRelation(baseGame.similar_games)
+  if (similarGameIds.length > 0) {
+    const igdbSimilar = await fetchGames({
+      limit: similarGameIds.length,
+      offset: 0,
+      fields: RESULT_FIELDS,
+      where: `id = (${similarGameIds.join(',')}) & platforms = (${platformIds.join(',')})`,
+      sort: 'total_rating desc',
+    })
+    for (const game of orderByIdList(igdbSimilar, similarGameIds)) {
+      if (seen.has(game.id)) continue
+      const overlap = scoreSimilarity(game, baseGame)
+      if (overlap < 0) continue
+      seen.add(game.id)
+      ranked.push({
+        game,
+        score: IGDB_SIMILAR_BOOST + overlap,
+      })
+    }
+  }
+
+  // 2. Broader pool, ranked by tag overlap
+  const whereParts = [`id != ${excludeId}`, `platforms = (${platformIds.join(',')})`]
+  if (genreIds.length > 0) {
+    whereParts.push(`genres = (${genreIds.join(',')})`)
+  } else if (themeIds.length > 0) {
+    whereParts.push(`themes = (${themeIds.join(',')})`)
+  } else {
+    return ranked.sort(compareRanked)
+  }
+
+  const candidates = await fetchGames({
+    limit: CANDIDATE_POOL,
+    offset: 0,
+    fields: RESULT_FIELDS,
+    where: whereParts.join(' & '),
+    sort: 'total_rating desc',
+  })
+
+  for (const game of candidates) {
+    if (seen.has(game.id)) continue
+    const score = scoreSimilarity(game, baseGame)
+    if (score < 0) continue
+    seen.add(game.id)
+    ranked.push({ game, score })
+  }
+
+  ranked.sort(compareRanked)
+  return ranked
+}
+
 export async function POST(request) {
   try {
     const { gameId, offset = 0 } = await request.json()
-    
+
     if (!gameId) {
-      return Response.json(
-        { error: 'Game ID is required' },
-        { status: 400 }
-      )
+      return Response.json({ error: 'Game ID is required' }, { status: 400 })
     }
 
-    // Create cache key
     const cacheKey = {
-      type: 'similar_games',
+      type: 'similar_games_v3',
       gameId,
-      offset
+      offset,
     }
 
-    // Try to get cached results
     if (offset === 0) {
       const cached = await getCachedSearch(cacheKey)
       if (cached) {
@@ -33,98 +153,35 @@ export async function POST(request) {
       }
     }
 
-    // Fetch the base game to get its genres, themes, and platforms
     const baseGames = await fetchGames({
       limit: 1,
       offset: 0,
-      fields: 'id,name,genres.*,themes.*,platforms.*',
-      where: `id = ${gameId}`
+      fields:
+        'id,name,similar_games,genres.*,themes.*,platforms.*,game_modes.*,player_perspectives.*',
+      where: `id = ${gameId}`,
     })
-    
-    if (!baseGames || baseGames.length === 0) {
-      return Response.json(
-        { error: 'Game not found' },
-        { status: 404 }
-      )
+
+    if (!baseGames?.length) {
+      return Response.json({ error: 'Game not found' }, { status: 404 })
     }
-    
+
     const baseGame = baseGames[0]
+    const ranked = await buildRankedSimilarGames(baseGame, gameId)
+    const page = ranked
+      .slice(offset, offset + PAGE_SIZE)
+      .map((entry) => entry.game)
 
-    // Extract genres, themes, and platforms from the base game
-    const genreIds = baseGame.genres && baseGame.genres.length > 0
-      ? baseGame.genres.map(g => g.id)
-      : []
-    
-    const themeIds = baseGame.themes && baseGame.themes.length > 0
-      ? baseGame.themes.map(t => t.id)
-      : []
-    
-    const platformIds = baseGame.platforms && baseGame.platforms.length > 0
-      ? baseGame.platforms.map(p => p.id)
-      : []
-
-    // Build where clause for similar games
-    let whereClause = []
-    
-    // Exclude the original game
-    whereClause.push(`id != ${gameId}`)
-    
-    // Filter by platforms (must match at least one platform) - REQUIRED
-    if (platformIds.length > 0) {
-      whereClause.push(`platforms = (${platformIds.join(',')})`)
-    } else {
-      // If no platforms, we can't filter properly, return empty
-      return Response.json([])
-    }
-    
-    // Build similarity filters (genres OR themes) - at least one must match
-    const similarityFilters = []
-    
-    if (genreIds.length > 0) {
-      similarityFilters.push(`genres = (${genreIds.join(',')})`)
-    }
-    
-    if (themeIds.length > 0) {
-      similarityFilters.push(`themes = (${themeIds.join(',')})`)
-    }
-    
-    // Add similarity filter if we have any genres or themes
-    if (similarityFilters.length > 0) {
-      // Use OR logic: match games that share genres OR themes
-      whereClause.push(`(${similarityFilters.join(' | ')})`)
-    } else {
-      // If no genres or themes, we can't find similar games
-      // Return games on same platforms but without similarity filter
-      console.warn(`Game ${gameId} has no genres or themes for similarity matching`)
-    }
-
-    // Combine all filters with AND
-    const where = whereClause.length > 0 
-      ? whereClause.join(' & ') 
-      : `id != ${gameId}`
-
-    // Fetch similar games
-    const similarGames = await fetchGames({
-      limit: 12,
-      offset,
-      fields: 'name,cover.*,first_release_date,total_rating,summary,url,genres.*,themes.*,platforms.*',
-      where,
-      sort: 'total_rating desc'
-    })
-
-    // Cache the results (only for first page)
     if (offset === 0) {
-      await cacheSearch(cacheKey, similarGames)
+      await cacheSearch(cacheKey, page)
     }
 
-    return Response.json(similarGames)
+    return Response.json(page)
   } catch (error) {
     console.error('Error finding similar games:', error)
-    
-    // Provide more specific error messages
+
     let errorMessage = 'Failed to find similar games'
     let statusCode = 500
-    
+
     if (error.status === 400) {
       errorMessage = 'Invalid request to game database. Please try again.'
       statusCode = 400
@@ -134,15 +191,14 @@ export async function POST(request) {
     } else if (error.message) {
       errorMessage = error.message
     }
-    
+
     return Response.json(
-      { 
-        error: errorMessage, 
+      {
+        error: errorMessage,
         message: error.message || 'Unknown error',
-        details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        details: process.env.NODE_ENV === 'development' ? error.stack : undefined,
       },
       { status: statusCode }
     )
   }
 }
-
