@@ -268,17 +268,26 @@ async function fetchGameById(gameId) {
   }
 
   // Check database cache first
-  const cacheKey = { type: 'game_by_id', gameId }
+  const cacheKey = { type: 'game_by_id', gameId, v: 2 }
   const cachedResults = await dbCache.getCachedSearch(cacheKey)
   
-  if (cachedResults) {
+  const { GAME_DETAIL_FIELDS, getCoverImageUrl } = require('./game-utils')
+
+  if (cachedResults && getCoverImageUrl(cachedResults.cover)) {
     console.log(`[DB CACHE HIT] Game by ID: ${gameId}`)
     return cachedResults
   }
-  
-  console.log(`[DB CACHE MISS] Game by ID: ${gameId} - calling IGDB API`)
 
-  const results = await igdbRequest('games', `fields *; where id = ${gameId};`)
+  if (cachedResults) {
+    console.log(`[DB CACHE STALE] Game by ID: ${gameId} - missing cover, refetching`)
+  } else {
+    console.log(`[DB CACHE MISS] Game by ID: ${gameId} - calling IGDB API`)
+  }
+
+  const results = await igdbRequest(
+    'games',
+    `fields ${GAME_DETAIL_FIELDS}; where id = ${gameId};`
+  )
   
   if (results.length === 0) {
     throw createError(ERROR_TYPES.NOT_FOUND, `Game with ID ${gameId} not found`)

@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { useSession } from 'next-auth/react'
 import ShareButton from './ShareButton'
+import { getCoverImageUrl } from '@/lib/game-utils'
 
 export default function GameDetailView({ game }) {
   const { status } = useSession()
@@ -21,13 +22,9 @@ export default function GameDetailView({ game }) {
     })
   }
 
-  const getCoverUrl = (cover) => {
-    if (cover?.url) {
-      const url = cover.url.startsWith('//') ? `https:${cover.url}` : cover.url
-      return url.replace('t_thumb', 't_cover_big')
-    }
-    return 'https://via.placeholder.com/264x374?text=No+Image'
-  }
+  const coverUrl =
+    getCoverImageUrl(game?.cover, 'big') ||
+    'https://via.placeholder.com/264x374?text=No+Image'
 
   useEffect(() => {
     if (status === 'authenticated' && game?.id) {
@@ -107,7 +104,7 @@ export default function GameDetailView({ game }) {
         <div className="md:flex">
           <div className="relative md:w-72 shrink-0 aspect-[3/4] bg-gray-200 dark:bg-gray-700">
             <img
-              src={getCoverUrl(game.cover)}
+              src={coverUrl}
               alt={game.name || 'Game cover'}
               className="w-full h-full object-cover"
             />

@@ -1,3 +1,7 @@
+/** IGDB fields for single-game fetches (must include cover.* for image URLs). */
+export const GAME_DETAIL_FIELDS =
+  'name,cover.*,first_release_date,total_rating,summary,url,slug,genres.*,themes.*,platforms.*,storyline,rating,rating_count'
+
 /**
  * Normalize game objects from API, favorites JSON, or legacy seed data.
  */
@@ -11,8 +15,14 @@ export function isStaleGameData(gameData, gameId) {
   const id = getGameId(gameData, gameId)
   if (!id || Number(id) !== Number(gameId)) return true
   if (!gameData.url) return true
-  if (!gameData.cover?.url) return true
+  if (!hasResolvableCover(gameData.cover)) return true
   return false
+}
+
+/** True when cover has enough data to build an image URL. */
+export function hasResolvableCover(cover) {
+  if (cover == null || typeof cover === 'number') return false
+  return !!(cover.url || cover.image_id)
 }
 
 export function normalizeGame(game, gameId) {
@@ -41,12 +51,17 @@ export function getLearnMoreUrl(game, gameId) {
 }
 
 export function getCoverImageUrl(cover, size = 'big') {
-  if (!cover?.url) return null
-  let url = cover.url.startsWith('//') ? `https:${cover.url}` : cover.url
-  if (size === 'small') {
-    url = url.replace('t_thumb', 't_cover_small')
-  } else {
-    url = url.replace('t_thumb', 't_cover_big')
+  if (!hasResolvableCover(cover)) return null
+
+  const sizeToken = size === 'small' ? 't_cover_small' : 't_cover_big'
+
+  if (cover.image_id) {
+    return `https://images.igdb.com/igdb/image/upload/${sizeToken}/${cover.image_id}.jpg`
   }
-  return url
+
+  let url = cover.url.startsWith('//') ? `https:${cover.url}` : cover.url
+  if (url.includes('images.igdb.com')) {
+    return url.replace(/\/t_[^/]+\//, `/${sizeToken}/`)
+  }
+  return url.replace('t_thumb', sizeToken)
 }

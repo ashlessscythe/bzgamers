@@ -2,13 +2,8 @@ import { notFound } from 'next/navigation'
 import { fetchGameById } from '@/lib/api'
 import { SITE_NAME } from '@/lib/config'
 import { getSiteUrl } from '@/lib/site-url'
+import { getCoverImageUrl } from '@/lib/game-utils'
 import GameDetailView from '@/components/GameDetailView'
-
-function getOgImageUrl(cover) {
-  if (!cover?.url) return null
-  const url = cover.url.startsWith('//') ? `https:${cover.url}` : cover.url
-  return url.replace('t_thumb', 't_cover_big')
-}
 
 export async function generateMetadata({ params }) {
   const { id } = await params
@@ -23,7 +18,7 @@ export async function generateMetadata({ params }) {
     const description =
       game.summary?.slice(0, 160) ||
       `View ${title} on ${SITE_NAME} — find games that match your mood.`
-    const imageUrl = getOgImageUrl(game.cover)
+    const imageUrl = getCoverImageUrl(game.cover, 'big')
     const pageUrl = `${getSiteUrl()}/games/${gameId}`
 
     return {

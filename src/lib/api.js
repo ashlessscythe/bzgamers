@@ -266,7 +266,11 @@ const fetchGameById = withCache(
       throw createError(ERROR_TYPES.VALIDATION, 'Game ID is missing')
     }
 
-    const results = await igdbRequest('games', `fields *; where id = ${gameId};`)
+    const { GAME_DETAIL_FIELDS } = require('./game-utils')
+    const results = await igdbRequest(
+      'games',
+      `fields ${GAME_DETAIL_FIELDS}; where id = ${gameId};`
+    )
     
     if (results.length === 0) {
       throw createError(ERROR_TYPES.NOT_FOUND, `Game with ID ${gameId} not found`)
@@ -274,7 +278,7 @@ const fetchGameById = withCache(
     
     return results[0]
   },
-  (gameId) => `${CACHE_KEYS.GAME_PREFIX}id_${gameId}`,
+  (gameId) => `${CACHE_KEYS.GAME_PREFIX}id_${gameId}_cover_v2`,
   CACHE_TTL.GAMES
 )
 
