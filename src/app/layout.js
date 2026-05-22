@@ -2,6 +2,7 @@ import '../styles/globals.css'
 import Layout from '../components/Layout'
 import { SITE_NAME } from '../lib/config'
 import SessionProvider from '../components/SessionProvider'
+import CookieConsentProvider from '../components/CookieConsentProvider'
 
 export const metadata = {
   title: {
@@ -19,9 +20,11 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <body>
         <SessionProvider>
-          <Layout>
-            {children}
-          </Layout>
+          <CookieConsentProvider>
+            <Layout>
+              {children}
+            </Layout>
+          </CookieConsentProvider>
         </SessionProvider>
       </body>
     </html>

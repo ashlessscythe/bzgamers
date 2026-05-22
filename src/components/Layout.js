@@ -9,6 +9,7 @@ import MobileMenu from './MobileMenu'
 import AuthModal from './AuthModal'
 import FeedbackModal from './FeedbackModal'
 import { SITE_NAME, GH_URL } from '../lib/config'
+import { useCookieConsent } from './CookieConsentProvider'
 
 /**
  * Main layout component that wraps all pages
@@ -19,6 +20,7 @@ export default function Layout({ children }) {
   const [authModalOpen, setAuthModalOpen] = useState(false)
   const [authModalMode, setAuthModalMode] = useState('signin')
   const [feedbackModalOpen, setFeedbackModalOpen] = useState(false)
+  const { resetConsent } = useCookieConsent()
   const isActive = (path) => pathname === path
 
   const openSignIn = () => {
@@ -227,6 +229,15 @@ export default function Layout({ children }) {
               >
                 IGDB.com
               </a>
+            </p>
+            <p className="mt-2 text-sm">
+              <button
+                type="button"
+                onClick={resetConsent}
+                className="text-primary hover:text-primary-dark transition-colors underline-offset-2 hover:underline"
+              >
+                Cookie preferences
+              </button>
             </p>
           </div>
         </div>

@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react'
 import GameResults from '@/components/GameResults'
 import GoToTopButton from '@/components/GoToTopButton'
 import { getUserFriendlyMessage } from '@/lib/error-handler'
+import { useCookieConsent } from '@/components/CookieConsentProvider'
 
 // Available mood options - common ones first
 const COMMON_MOOD_OPTIONS = [
@@ -110,6 +111,8 @@ export default function Games() {
     sortOrder: 'desc'
   })
 
+  const { preferencesAllowed } = useCookieConsent()
+
   // Load genres on component mount
   useEffect(() => {
     async function loadGenres() {
@@ -137,6 +140,7 @@ export default function Games() {
 
   // Load saved state from localStorage on component mount
   useEffect(() => {
+    if (!preferencesAllowed) return
     const savedState = localStorage.getItem('bzgamers-search-state')
     if (savedState) {
       setIsRestoring(true)
@@ -186,10 +190,11 @@ export default function Games() {
         setIsRestoring(false)
       }
     }
-  }, [])
+  }, [preferencesAllowed])
 
   // Save state to localStorage whenever relevant state changes
   useEffect(() => {
+    if (!preferencesAllowed) return
     if (showResults && originalResults.length > 0) {
       const stateToSave = {
         selectedMood,
@@ -209,7 +214,7 @@ export default function Games() {
       // Clear saved state if no results to show
       localStorage.removeItem('bzgamers-search-state')
     }
-  }, [selectedMood, selectedTime, selectedGenre, results, originalResults, showResults, advancedFilters, showAllMoods, showAdvancedGenres, searchMode, selectedGame])
+  }, [preferencesAllowed, selectedMood, selectedTime, selectedGenre, results, originalResults, showResults, advancedFilters, showAllMoods, showAdvancedGenres, searchMode, selectedGame])
 
   // Restore scroll position after loading more results
   useEffect(() => {

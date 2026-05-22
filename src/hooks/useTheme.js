@@ -1,46 +1,67 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import { allowsPreferenceStorage, readStoredConsent } from '../lib/cookie-consent'
+
+function getSystemTheme() {
+  if (typeof window === 'undefined') return 'light'
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+}
+
+function getInitialTheme() {
+  const consent = readStoredConsent()
+  if (allowsPreferenceStorage(consent)) {
+    const storedTheme = localStorage.getItem('theme')
+    if (storedTheme === 'light' || storedTheme === 'dark') return storedTheme
+  }
+  return getSystemTheme()
+}
 
 /**
  * Custom hook for managing theme (dark/light mode)
  * @returns {Object} Theme state and toggle function
  */
 export default function useTheme() {
-  // Check if we're in the browser environment
   const isBrowser = typeof window !== 'undefined'
-  
-  // Initialize theme state from localStorage or system preference
-  const [theme, setTheme] = useState(() => {
-    if (!isBrowser) return 'light' // Default for SSR
-    
-    // Check localStorage first
-    const storedTheme = localStorage.getItem('theme')
-    if (storedTheme) return storedTheme
-    
-    // Otherwise check system preference
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
-  })
-  
-  // Effect to update document class when theme changes
-  useEffect(() => {
+  const [theme, setTheme] = useState(() => (isBrowser ? getInitialTheme() : 'light'))
+
+  const applyThemeClass = useCallback((nextTheme) => {
     if (!isBrowser) return
-    
-    // Update localStorage
-    localStorage.setItem('theme', theme)
-    
-    // Update document class for Tailwind
     const root = window.document.documentElement
-    
-    if (theme === 'dark') {
+    if (nextTheme === 'dark') {
       root.classList.add('dark')
     } else {
       root.classList.remove('dark')
     }
+  }, [isBrowser])
+
+  useEffect(() => {
+    if (!isBrowser) return
+
+    applyThemeClass(theme)
+
+    if (allowsPreferenceStorage(readStoredConsent())) {
+      localStorage.setItem('theme', theme)
+    }
+  }, [theme, isBrowser, applyThemeClass])
+
+  useEffect(() => {
+    if (!isBrowser) return
+
+    const onConsentChange = () => {
+      if (allowsPreferenceStorage(readStoredConsent())) {
+        localStorage.setItem('theme', theme)
+      } else {
+        localStorage.removeItem('theme')
+        setTheme(getSystemTheme())
+      }
+    }
+
+    window.addEventListener('bzgamers-cookie-consent', onConsentChange)
+    return () => window.removeEventListener('bzgamers-cookie-consent', onConsentChange)
   }, [theme, isBrowser])
-  
-  // Toggle theme function
+
   const toggleTheme = () => {
-    setTheme(prevTheme => prevTheme === 'light' ? 'dark' : 'light')
+    setTheme((prevTheme) => (prevTheme === 'light' ? 'dark' : 'light'))
   }
-  
+
   return { theme, toggleTheme }
 }
