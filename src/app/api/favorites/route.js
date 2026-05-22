@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { PrismaClient } from '@/generated/prisma'
 import { auth } from '@/lib/auth-config'
+import { enrichFavorites } from '@/lib/favorite-enrichment'
 
 const prisma = new PrismaClient()
 
@@ -28,9 +29,11 @@ export async function GET(request) {
       }
     })
 
+    const enrichedFavorites = await enrichFavorites(favorites)
+
     return NextResponse.json({
       success: true,
-      favorites
+      favorites: enrichedFavorites
     })
   } catch (error) {
     console.error('Error fetching favorites:', error)

@@ -3,6 +3,13 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useSession } from 'next-auth/react'
+import ShareButton from './ShareButton'
+import {
+  normalizeGame,
+  getGameId,
+  getCoverImageUrl,
+  getLearnMoreUrl,
+} from '@/lib/game-utils'
 
 /**
  * GameCard component for displaying individual game information
@@ -12,6 +19,33 @@ export default function GameCard({ game, onFavoriteChange }) {
   const [isFavorited, setIsFavorited] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [showAuthMessage, setShowAuthMessage] = useState(false)
+
+  const gameId = game ? getGameId(game) : null
+
+  const checkFavoriteStatus = async () => {
+    if (!gameId || status !== 'authenticated') return
+
+    try {
+      const response = await fetch('/api/favorites/check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ gameIds: [gameId] })
+      })
+      const data = await response.json()
+      if (data.success) {
+        setIsFavorited(data.favoritedGameIds.includes(gameId))
+      }
+    } catch (error) {
+      console.error('Error checking favorite status:', error)
+    }
+  }
+
+  useEffect(() => {
+    if (status === 'authenticated' && gameId) {
+      checkFavoriteStatus()
+    }
+  }, [status, gameId])
+
   // Safety check for undefined game
   if (!game) {
     return (
@@ -20,6 +54,8 @@ export default function GameCard({ game, onFavoriteChange }) {
       </div>
     )
   }
+
+  const displayGame = normalizeGame(game, gameId)
 
   const cardVariants = {
     hidden: { y: 20, opacity: 0 },
@@ -48,39 +84,10 @@ export default function GameCard({ game, onFavoriteChange }) {
     return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
   }
 
-  // Get cover image URL or placeholder
-  const getCoverUrl = (cover) => {
-    if (cover && cover.url) {
-      // Replace t_thumb with t_cover_big for larger images
-      return cover.url.replace('t_thumb', 't_cover_big')
-    }
-    return 'https://via.placeholder.com/264x374?text=No+Image'
-  }
-
-  // Check if game is favorited on mount
-  useEffect(() => {
-    if (status === 'authenticated' && game?.id) {
-      checkFavoriteStatus()
-    }
-  }, [status, game?.id])
-
-  const checkFavoriteStatus = async () => {
-    if (!game?.id || status !== 'authenticated') return
-
-    try {
-      const response = await fetch('/api/favorites/check', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ gameIds: [game.id] })
-      })
-      const data = await response.json()
-      if (data.success) {
-        setIsFavorited(data.favoritedGameIds.includes(game.id))
-      }
-    } catch (error) {
-      console.error('Error checking favorite status:', error)
-    }
-  }
+  const coverUrl =
+    getCoverImageUrl(displayGame.cover, 'big') ||
+    'https://via.placeholder.com/264x374?text=No+Image'
+  const learnMoreUrl = getLearnMoreUrl(displayGame, gameId)
 
   const handleFavoriteToggle = async (e) => {
     e.preventDefault()
@@ -92,19 +99,19 @@ export default function GameCard({ game, onFavoriteChange }) {
       return
     }
 
-    if (!game?.id || isLoading) return
+    if (!gameId || isLoading) return
 
     setIsLoading(true)
     try {
       if (isFavorited) {
         // Remove from favorites
-        const response = await fetch(`/api/favorites?gameId=${game.id}`, {
+        const response = await fetch(`/api/favorites?gameId=${gameId}`, {
           method: 'DELETE'
         })
         const data = await response.json()
         if (data.success) {
           setIsFavorited(false)
-          if (onFavoriteChange) onFavoriteChange(game.id, false)
+          if (onFavoriteChange) onFavoriteChange(gameId, false)
         }
       } else {
         // Add to favorites
@@ -112,15 +119,15 @@ export default function GameCard({ game, onFavoriteChange }) {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            gameId: game.id,
-            gameName: game.name,
-            gameData: game
+            gameId,
+            gameName: displayGame.name,
+            gameData: displayGame
           })
         })
         const data = await response.json()
         if (data.success) {
           setIsFavorited(true)
-          if (onFavoriteChange) onFavoriteChange(game.id, true)
+          if (onFavoriteChange) onFavoriteChange(gameId, true)
         }
       }
     } catch (error) {
@@ -136,23 +143,24 @@ export default function GameCard({ game, onFavoriteChange }) {
       variants={cardVariants}
       whileHover="hover"
     >
-      <div className="relative aspect-[3/4] bg-gray-200 dark:bg-gray-700">
+      <div className="relative aspect-[3/4] bg-gray-200 dark:bg-gray-700 overflow-hidden">
         <img 
-          src={getCoverUrl(game.cover)} 
-          alt={game.name || 'Game'}
+          src={coverUrl} 
+          alt={displayGame.name || 'Game'}
           className="w-full h-full object-cover"
           loading="lazy"
         />
-        {game.total_rating && (
-          <div className="absolute top-2 right-2 bg-primary text-white rounded-full w-10 h-10 flex items-center justify-center font-bold">
-            {Math.round(game.total_rating)}
+        {displayGame.total_rating && (
+          <div className="absolute top-2 right-2 z-20 bg-primary text-white rounded-full w-10 h-10 flex items-center justify-center font-bold">
+            {Math.round(displayGame.total_rating)}
           </div>
         )}
-        {/* Favorite button */}
-        <button
+        <div className="absolute top-2 left-2 z-20 flex items-center gap-1">
+          {/* Favorite button */}
+          <button
           onClick={handleFavoriteToggle}
           disabled={isLoading}
-          className={`absolute top-2 left-2 p-2 rounded-full transition-all ${
+          className={`p-2 rounded-full transition-all ${
             isFavorited
               ? 'bg-red-500 text-white hover:bg-red-600'
               : 'bg-white/90 dark:bg-gray-800/90 text-gray-600 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-800'
@@ -173,6 +181,8 @@ export default function GameCard({ game, onFavoriteChange }) {
             <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
           </svg>
         </button>
+          <ShareButton gameId={gameId} gameName={displayGame.name} />
+        </div>
         {/* Auth message tooltip */}
         {showAuthMessage && (
           <motion.div
@@ -187,13 +197,17 @@ export default function GameCard({ game, onFavoriteChange }) {
       </div>
       
       <div className="p-4">
-        <h3 className="text-lg font-bold mb-1 line-clamp-1 text-gray-900 dark:text-gray-100">{game.name || 'Unknown Game'}</h3>
+        <h3 className="text-lg font-bold mb-1 line-clamp-1 text-gray-900 dark:text-gray-100">
+          <a href={`/games/${gameId}`} className="hover:text-primary transition-colors">
+            {displayGame.name || 'Unknown Game'}
+          </a>
+        </h3>
         <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-          {formatDate(game.first_release_date)}
+          {formatDate(displayGame.first_release_date)}
         </p>
-        {game.platforms && game.platforms.length > 0 && (
+        {displayGame.platforms && displayGame.platforms.length > 0 && (
           <div className="flex flex-wrap gap-1 mb-2">
-            {game.platforms.slice(0, 3).map(platform => (
+            {displayGame.platforms.slice(0, 3).map(platform => (
               <span
                 key={platform.id}
                 className="text-xs bg-blue-100 dark:bg-blue-700 px-2 py-1 rounded-full"
@@ -204,9 +218,9 @@ export default function GameCard({ game, onFavoriteChange }) {
           </div>
         )}
         
-        {game.genres && game.genres.length > 0 && (
+        {displayGame.genres && displayGame.genres.length > 0 && (
           <div className="flex flex-wrap gap-1 mb-3">
-            {game.genres.slice(0, 3).map(genre => (
+            {displayGame.genres.slice(0, 3).map(genre => (
               <span 
                 key={genre.id} 
                 className="text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full"
@@ -218,12 +232,12 @@ export default function GameCard({ game, onFavoriteChange }) {
         )}
         
         <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-3 mb-3">
-          {game.summary || 'No description available.'}
+          {displayGame.summary || 'No description available.'}
         </p>
         
         <div className="flex flex-col items-center mt-4 gap-2">
           <a 
-            href={game.url || '#'} 
+            href={learnMoreUrl} 
             target="_blank" 
             rel="noopener noreferrer"
             className="btn-primary text-sm py-2 px-4 inline-flex items-center justify-center w-full"

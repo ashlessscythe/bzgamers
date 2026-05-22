@@ -3,6 +3,13 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useSession } from 'next-auth/react'
+import ShareButton from './ShareButton'
+import {
+  normalizeGame,
+  getGameId,
+  getCoverImageUrl,
+  getLearnMoreUrl,
+} from '@/lib/game-utils'
 
 /**
  * CompactGameCard component - smaller version for profile page
@@ -13,6 +20,32 @@ export default function CompactGameCard({ game, onFavoriteChange }) {
   const [isLoading, setIsLoading] = useState(false)
   const [showAuthMessage, setShowAuthMessage] = useState(false)
 
+  const gameId = game ? getGameId(game, game._gameId) : null
+
+  const checkFavoriteStatus = async () => {
+    if (!gameId || status !== 'authenticated') return
+
+    try {
+      const response = await fetch('/api/favorites/check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ gameIds: [gameId] })
+      })
+      const data = await response.json()
+      if (data.success) {
+        setIsFavorited(data.favoritedGameIds.includes(gameId))
+      }
+    } catch (error) {
+      console.error('Error checking favorite status:', error)
+    }
+  }
+
+  useEffect(() => {
+    if (status === 'authenticated' && gameId) {
+      checkFavoriteStatus()
+    }
+  }, [status, gameId])
+
   if (!game) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-3">
@@ -20,6 +53,12 @@ export default function CompactGameCard({ game, onFavoriteChange }) {
       </div>
     )
   }
+
+  const displayGame = normalizeGame(game, gameId)
+  const coverUrl =
+    getCoverImageUrl(displayGame.cover, 'small') ||
+    'https://via.placeholder.com/90x128?text=No+Image'
+  const learnMoreUrl = getLearnMoreUrl(displayGame, gameId)
 
   const cardVariants = {
     hidden: { y: 10, opacity: 0 },
@@ -48,39 +87,6 @@ export default function CompactGameCard({ game, onFavoriteChange }) {
     return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short' })
   }
 
-  // Get cover image URL
-  const getCoverUrl = (cover) => {
-    if (cover && cover.url) {
-      return cover.url.replace('t_thumb', 't_cover_small')
-    }
-    return 'https://via.placeholder.com/90x128?text=No+Image'
-  }
-
-  // Check if game is favorited on mount
-  useEffect(() => {
-    if (status === 'authenticated' && game?.id) {
-      checkFavoriteStatus()
-    }
-  }, [status, game?.id])
-
-  const checkFavoriteStatus = async () => {
-    if (!game?.id || status !== 'authenticated') return
-
-    try {
-      const response = await fetch('/api/favorites/check', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ gameIds: [game.id] })
-      })
-      const data = await response.json()
-      if (data.success) {
-        setIsFavorited(data.favoritedGameIds.includes(game.id))
-      }
-    } catch (error) {
-      console.error('Error checking favorite status:', error)
-    }
-  }
-
   const handleFavoriteToggle = async (e) => {
     e.preventDefault()
     e.stopPropagation()
@@ -91,33 +97,33 @@ export default function CompactGameCard({ game, onFavoriteChange }) {
       return
     }
 
-    if (!game?.id || isLoading) return
+    if (!gameId || isLoading) return
 
     setIsLoading(true)
     try {
       if (isFavorited) {
-        const response = await fetch(`/api/favorites?gameId=${game.id}`, {
+        const response = await fetch(`/api/favorites?gameId=${gameId}`, {
           method: 'DELETE'
         })
         const data = await response.json()
         if (data.success) {
           setIsFavorited(false)
-          if (onFavoriteChange) onFavoriteChange(game.id, false)
+          if (onFavoriteChange) onFavoriteChange(gameId, false)
         }
       } else {
         const response = await fetch('/api/favorites', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            gameId: game.id,
-            gameName: game.name,
-            gameData: game
+            gameId,
+            gameName: displayGame.name,
+            gameData: displayGame
           })
         })
         const data = await response.json()
         if (data.success) {
           setIsFavorited(true)
-          if (onFavoriteChange) onFavoriteChange(game.id, true)
+          if (onFavoriteChange) onFavoriteChange(gameId, true)
         }
       }
     } catch (error) {
@@ -137,16 +143,23 @@ export default function CompactGameCard({ game, onFavoriteChange }) {
         {/* Cover Image */}
         <div className="relative flex-shrink-0 w-20 h-28 bg-gray-200 dark:bg-gray-700 rounded overflow-hidden">
           <img 
-            src={getCoverUrl(game.cover)} 
-            alt={game.name || 'Game'}
+            src={coverUrl} 
+            alt={displayGame.name || 'Game'}
             className="w-full h-full object-cover"
             loading="lazy"
           />
-          {game.total_rating && (
-            <div className="absolute top-1 right-1 bg-primary text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
-              {Math.round(game.total_rating)}
+          {displayGame.total_rating && (
+            <div className="absolute top-1 right-1 z-20 bg-primary text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
+              {Math.round(displayGame.total_rating)}
             </div>
           )}
+          <div className="absolute top-1 left-1 z-20">
+            <ShareButton
+              gameId={gameId}
+              gameName={displayGame.name}
+              iconClassName="h-3.5 w-3.5"
+            />
+          </div>
           {/* Favorite button */}
           <button
             onClick={handleFavoriteToggle}
@@ -188,18 +201,20 @@ export default function CompactGameCard({ game, onFavoriteChange }) {
         {/* Content */}
         <div className="flex-1 min-w-0 flex flex-col">
           <h3 className="text-sm font-semibold mb-1 line-clamp-2 text-gray-900 dark:text-gray-100">
-            {game.name || 'Unknown Game'}
+            <a href={`/games/${gameId}`} className="hover:text-primary transition-colors">
+              {displayGame.name || 'Unknown Game'}
+            </a>
           </h3>
           
-          {formatDate(game.first_release_date) && (
+          {formatDate(displayGame.first_release_date) && (
             <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
-              {formatDate(game.first_release_date)}
+              {formatDate(displayGame.first_release_date)}
             </p>
           )}
 
-          {game.platforms && game.platforms.length > 0 && (
+          {displayGame.platforms && displayGame.platforms.length > 0 && (
             <div className="flex flex-wrap gap-1 mb-2">
-              {game.platforms.slice(0, 2).map(platform => (
+              {displayGame.platforms.slice(0, 2).map(platform => (
                 <span
                   key={platform.id}
                   className="text-xs bg-blue-100 dark:bg-blue-700 px-1.5 py-0.5 rounded"
@@ -207,31 +222,33 @@ export default function CompactGameCard({ game, onFavoriteChange }) {
                   {platform.name}
                 </span>
               ))}
-              {game.platforms.length > 2 && (
+              {displayGame.platforms.length > 2 && (
                 <span className="text-xs text-gray-500 dark:text-gray-400">
-                  +{game.platforms.length - 2}
+                  +{displayGame.platforms.length - 2}
                 </span>
               )}
             </div>
           )}
           
-          {game.summary && (
+          {displayGame.summary && (
             <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2 mb-2 flex-1">
-              {game.summary}
+              {displayGame.summary}
             </p>
           )}
           
-          <a 
-            href={game.url || '#'} 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="text-xs text-primary hover:underline inline-flex items-center gap-1 mt-auto"
-          >
-            Learn More
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-            </svg>
-          </a>
+          <div className="flex items-center gap-3 mt-auto">
+            <a 
+              href={learnMoreUrl} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-xs text-primary hover:underline inline-flex items-center gap-1"
+            >
+              Learn More
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+            </a>
+          </div>
         </div>
       </div>
     </motion.div>

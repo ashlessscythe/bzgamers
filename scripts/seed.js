@@ -200,8 +200,10 @@ async function seedUsers(faker) {
           update: {
             gameName: game.name,
             gameData: {
+              id: game.igdbId,
               name: game.name,
-              igdbId: game.igdbId
+              igdbId: game.igdbId,
+              url: `https://www.igdb.com/games/${game.igdbId}`
             }
           },
           create: {
@@ -209,8 +211,10 @@ async function seedUsers(faker) {
             gameId: game.igdbId,
             gameName: game.name,
             gameData: {
+              id: game.igdbId,
               name: game.name,
-              igdbId: game.igdbId
+              igdbId: game.igdbId,
+              url: `https://www.igdb.com/games/${game.igdbId}`
             }
           }
         })

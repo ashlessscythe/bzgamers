@@ -50,14 +50,20 @@ export async function proxy(request) {
   
   // Public routes - accessible to everyone (anonymous, GUEST, and ADMIN)
   const publicRoutes = ['/', '/games', '/about']
-  if (publicRoutes.includes(pathname)) {
+  const isPublicGameDetail = pathname.startsWith('/games/') && pathname !== '/games'
+  if (publicRoutes.includes(pathname) || isPublicGameDetail) {
     return NextResponse.next()
   }
   
   // For authenticated GUEST users, allow public routes, home page, profile, and favorites
   if (session && session.user?.role === 'GUEST') {
     const allowedRoutes = ['/', '/profile', '/games', '/about']
-    if (!allowedRoutes.includes(pathname) && !pathname.startsWith('/api/favorites')) {
+    const isAllowedGameDetail = pathname.startsWith('/games/') && pathname !== '/games'
+    if (
+      !allowedRoutes.includes(pathname) &&
+      !isAllowedGameDetail &&
+      !pathname.startsWith('/api/favorites')
+    ) {
       return NextResponse.redirect(new URL('/', request.url))
     }
     return NextResponse.next()

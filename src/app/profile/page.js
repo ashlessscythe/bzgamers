@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import CompactGameCard from '../../components/CompactGameCard'
 import AuthModal from '../../components/AuthModal'
+import { normalizeGame } from '@/lib/game-utils'
 
 export default function ProfilePage() {
   const { data: session, status } = useSession()
@@ -29,16 +30,18 @@ export default function ProfilePage() {
       const data = await response.json()
       if (data.success) {
         // Extract game data from favorites, preserving favorite ID for unique keys
-        const games = data.favorites.map(fav => {
-          const gameData = fav.gameData || {
-            id: fav.gameId,
-            name: fav.gameName || 'Unknown Game'
-          }
-          // Add favorite ID to ensure unique keys
+        const games = data.favorites.map((fav) => {
+          const gameData = normalizeGame(
+            fav.gameData || {
+              id: fav.gameId,
+              name: fav.gameName || 'Unknown Game',
+            },
+            fav.gameId
+          )
           return {
             ...gameData,
-            _favoriteId: fav.id, // Internal ID for React keys
-            _gameId: fav.gameId
+            _favoriteId: fav.id,
+            _gameId: fav.gameId,
           }
         })
         setFavorites(games)
