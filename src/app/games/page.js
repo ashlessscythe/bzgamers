@@ -2,7 +2,8 @@
 
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import GameResults from '@/components/GameResults'
 import GoToTopButton from '@/components/GoToTopButton'
 import { getUserFriendlyMessage } from '@/lib/error-handler'
@@ -71,7 +72,9 @@ const TIME_MAP = {
   '2+ hours': 'long'
 }
 
-export default function Games() {
+function GamesContent() {
+  const searchParams = useSearchParams()
+
   // State for selected options
   const [searchMode, setSearchMode] = useState(null) // 'mood' or 'similar'
   const [selectedMood, setSelectedMood] = useState(null)
@@ -138,9 +141,59 @@ export default function Games() {
     loadGenres()
   }, [])
 
+  // Deep link: /games?mode=mood or /games?mode=similar&gameId=...
+  useEffect(() => {
+    const mode = searchParams.get('mode')
+    const gameIdParam = searchParams.get('gameId')
+
+    if (mode === 'mood') {
+      setSearchMode('mood')
+      setSearchStep(1)
+      setShowResults(false)
+      setError(null)
+      return
+    }
+
+    if (mode !== 'similar' || !gameIdParam) return
+
+    const gameId = parseInt(gameIdParam, 10)
+    if (!Number.isFinite(gameId) || gameId <= 0) return
+
+    let cancelled = false
+
+    async function loadSimilarSeedGame() {
+      try {
+        const response = await fetch(`/api/games/${gameId}`)
+        if (!response.ok || cancelled) return
+
+        const data = await response.json()
+        if (!data.success || !data.game || cancelled) return
+
+        const game = data.game
+        setSearchMode('similar')
+        setSearchStep(2)
+        setSelectedGame(game)
+        setSearchResults([game])
+        setSearchQuery(game.name || '')
+        setShowResults(false)
+        setError(null)
+      } catch (err) {
+        if (!cancelled) {
+          console.error('Error loading game for similar search:', err)
+        }
+      }
+    }
+
+    loadSimilarSeedGame()
+    return () => {
+      cancelled = true
+    }
+  }, [searchParams])
+
   // Load saved state from localStorage on component mount
   useEffect(() => {
     if (!preferencesAllowed) return
+    if (searchParams.get('mode')) return
     const savedState = localStorage.getItem('bzgamers-search-state')
     if (savedState) {
       setIsRestoring(true)
@@ -190,7 +243,7 @@ export default function Games() {
         setIsRestoring(false)
       }
     }
-  }, [preferencesAllowed])
+  }, [preferencesAllowed, searchParams])
 
   // Save state to localStorage whenever relevant state changes
   useEffect(() => {
@@ -1323,4 +1376,19 @@ export default function Games() {
       <GoToTopButton />
     </div>
   )
-} 
+}
+
+export default function Games() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex flex-col items-center justify-center py-24">
+          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4" />
+          <p className="text-lg text-gray-600 dark:text-gray-400">Loading...</p>
+        </div>
+      }
+    >
+      <GamesContent />
+    </Suspense>
+  )
+}

@@ -231,6 +231,29 @@ export default function GameDetailView({ game }) {
           </div>
         </div>
       </motion.article>
+
+      <section className="mt-8 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-6 shadow-md">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+          Discover more games
+        </h2>
+        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+          Use this title as a starting point, or browse by how you feel right now.
+        </p>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <Link
+            href={`/games?mode=similar&gameId=${game.id}`}
+            className="btn-primary text-sm py-3 px-6 inline-flex items-center justify-center text-center"
+          >
+            Give me games like this
+          </Link>
+          <Link
+            href="/games?mode=mood"
+            className="btn-secondary text-sm py-3 px-6 inline-flex items-center justify-center text-center"
+          >
+            Find games by mood
+          </Link>
+        </div>
+      </section>
     </div>
   )
 }
