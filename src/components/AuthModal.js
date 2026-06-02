@@ -5,6 +5,7 @@ import { signIn } from 'next-auth/react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import { loadTurnstile, isTurnstileLoaded } from '../lib/turnstile-loader'
+import { isValidPassword } from '../lib/validation'
 
 export default function AuthModal({ isOpen, onClose, initialMode = 'signin' }) {
   const [mode, setMode] = useState(initialMode) // 'signin' or 'signup'
@@ -106,7 +107,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'signin' }) {
           theme: 'auto', // Automatically match light/dark theme
           size: 'normal',
           callback: (token) => {
-            console.log('Turnstile callback received, token length:', token?.length)
+            console.warn('Turnstile callback received, token length:', token?.length)
             if (token) {
               setTurnstileToken(token)
               setError('') // Clear any previous errors
@@ -128,7 +129,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'signin' }) {
             setError('Captcha verification timed out. Please try again.')
           },
         })
-        console.log('Turnstile widget rendered successfully with site key:', siteKey ? `${siteKey.substring(0, 8)}...` : 'missing')
+        console.warn('Turnstile widget rendered successfully with site key:', siteKey ? `${siteKey.substring(0, 8)}...` : 'missing')
         return true
       } catch (e) {
         console.error('Turnstile render error:', e)
@@ -207,7 +208,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'signin' }) {
 
     try {
       const result = await signIn('credentials', {
-        email,
+        email: email.trim(),
         password,
         redirect: false,
       })
@@ -232,7 +233,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'signin' }) {
     e.preventDefault()
     setError('')
 
-    if (password.length < 6) {
+    if (!isValidPassword(password)) {
       setError('Password must be at least 6 characters')
       return
     }
@@ -248,7 +249,12 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'signin' }) {
       const response = await fetch('/api/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, name: name || null, turnstileToken })
+        body: JSON.stringify({
+          email: email.trim(),
+          password,
+          name: name?.trim() || null,
+          turnstileToken,
+        })
       })
 
       const data = await response.json()
@@ -258,7 +264,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'signin' }) {
         // Auto sign in after signup
         setTimeout(async () => {
           const result = await signIn('credentials', {
-            email,
+            email: email.trim(),
             password,
             redirect: false,
           })

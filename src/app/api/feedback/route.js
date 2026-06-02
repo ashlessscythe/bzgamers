@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { PrismaClient } from '@/generated/prisma'
 import { auth } from '@/lib/auth-config'
+import { isValidEmail, normalizeEmail } from '@/lib/validation'
 
 const prisma = new PrismaClient()
 
@@ -31,12 +32,14 @@ export async function POST(request) {
       )
     }
 
-    if (!email || !email.includes('@')) {
+    if (!isValidEmail(email)) {
       return NextResponse.json(
         { error: 'Valid email is required' },
         { status: 400 }
       )
     }
+
+    const normalizedEmail = normalizeEmail(email)
 
     if (!message || message.trim().length === 0) {
       return NextResponse.json(
@@ -91,7 +94,7 @@ export async function POST(request) {
     await prisma.feedback.create({
       data: {
         name: name.trim(),
-        email: email.trim().toLowerCase(),
+        email: normalizedEmail,
         message: message.trim(),
         userId: userId,
       },

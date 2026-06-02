@@ -1,13 +1,11 @@
 "use client"
 
 import { useState, useEffect, useRef } from 'react'
-import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import { loadTurnstile, isTurnstileLoaded } from '@/lib/turnstile-loader'
+import { loadTurnstile } from '@/lib/turnstile-loader'
 
 export default function ForgotPasswordPage() {
-  const router = useRouter()
   const [email, setEmail] = useState('')
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -171,7 +169,7 @@ export default function ForgotPasswordPage() {
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8">
           <h1 className="text-3xl font-bold mb-2 text-center">Reset Password</h1>
           <p className="text-gray-600 dark:text-gray-400 text-center mb-6">
-            Enter your email address and we'll send you a link to reset your password.
+            Enter your email address and we&apos;ll send you a link to reset your password.
           </p>
 
           {success ? (
@@ -241,7 +239,7 @@ export default function ForgotPasswordPage() {
               ← Back to Sign In
             </Link>
             <div className="text-sm text-gray-600 dark:text-gray-400">
-              Don't have an account?{' '}
+              Don&apos;t have an account?{' '}
               <Link href="/" className="text-primary hover:underline">
                 Sign up
               </Link>

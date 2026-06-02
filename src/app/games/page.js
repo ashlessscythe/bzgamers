@@ -1,7 +1,6 @@
 "use client"
 
 import { motion } from 'framer-motion'
-import Link from 'next/link'
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import GameResults from '@/components/GameResults'

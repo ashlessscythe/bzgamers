@@ -3,6 +3,7 @@ import { PrismaClient } from '@/generated/prisma'
 import { Resend } from 'resend'
 import { getPasswordResetEmail } from '@/lib/email-templates'
 import crypto from 'crypto'
+import { isValidEmail, normalizeEmail } from '@/lib/validation'
 
 const prisma = new PrismaClient()
 const resend = new Resend(process.env.RESEND_API_KEY)
@@ -27,12 +28,14 @@ export async function POST(request) {
     const { email, turnstileToken } = body
 
     // Validation
-    if (!email || !email.includes('@')) {
+    if (!isValidEmail(email)) {
       return NextResponse.json(
         { error: 'Valid email is required' },
         { status: 400 }
       )
     }
+
+    const normalizedEmail = normalizeEmail(email)
 
     // Verify Turnstile token
     if (!turnstileToken) {
@@ -73,7 +76,6 @@ export async function POST(request) {
     }
 
     // Check if user exists (don't reveal if they don't for security)
-    const normalizedEmail = email.toLowerCase().trim()
     const user = await prisma.user.findUnique({
       where: { email: normalizedEmail }
     })

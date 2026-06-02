@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { PrismaClient } from '../../../generated/prisma'
 import { Resend } from 'resend'
 import { getWaitlistAutoWelcomeEmail } from '../../../lib/email-templates'
+import { isValidEmail, normalizeEmail } from '../../../lib/validation'
 
 const prisma = new PrismaClient()
 const resend = new Resend(process.env.RESEND_API_KEY)
@@ -14,16 +15,18 @@ export async function POST(request) {
   try {
     const { email } = await request.json()
 
-    if (!email || !email.includes('@')) {
+    if (!isValidEmail(email)) {
       return NextResponse.json(
         { error: 'Valid email is required' },
         { status: 400 }
       )
     }
 
+    const normalizedEmail = normalizeEmail(email)
+
     // Check if email already exists
     const existing = await prisma.waitlistEmail.findUnique({
-      where: { email: email.toLowerCase() }
+      where: { email: normalizedEmail }
     })
 
     if (existing) {
@@ -39,7 +42,7 @@ export async function POST(request) {
     // Add to waitlist
     const waitlistEmail = await prisma.waitlistEmail.create({
       data: {
-        email: email.toLowerCase(),
+        email: normalizedEmail,
         notified: false
       }
     })
@@ -47,17 +50,17 @@ export async function POST(request) {
     // Automatically send welcome email
     try {
       const fromEmail = process.env.RESEND_FROM_EMAIL || 'BZGamers <onboarding@resend.dev>'
-      const emailHtml = getWaitlistAutoWelcomeEmail(email.toLowerCase())
+      const emailHtml = getWaitlistAutoWelcomeEmail(normalizedEmail)
       
-      const { data, error } = await resend.emails.send({
+      const { error: sendError } = await resend.emails.send({
         from: fromEmail,
-        to: email.toLowerCase(),
+        to: normalizedEmail,
         subject: 'Thanks for Joining BZGamers Waitlist! 🎮',
         html: emailHtml
       })
 
-      if (error) {
-        console.error('Error sending welcome email:', error)
+      if (sendError) {
+        console.error('Error sending welcome email:', sendError)
         // Don't fail the request if email fails, just log it
       } else {
         // Mark as notified since we sent the welcome email
@@ -68,7 +71,7 @@ export async function POST(request) {
             notifiedAt: new Date()
           }
         })
-        console.log('Welcome email sent successfully to:', email.toLowerCase())
+        console.log('Welcome email sent successfully to:', normalizedEmail)
       }
     } catch (emailError) {
       console.error('Error sending welcome email:', emailError)

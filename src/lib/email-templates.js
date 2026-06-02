@@ -7,7 +7,7 @@
  * @param {string} email - User email
  * @returns {string} - HTML email content
  */
-export function getWaitlistWelcomeEmail(email) {
+export function getWaitlistWelcomeEmail(_email) {
   return `
     <!DOCTYPE html>
     <html>
@@ -147,7 +147,7 @@ export function getWaitlistAutoWelcomeEmail(email, name = null) {
  * @param {string} email - User email
  * @returns {string} - HTML email content
  */
-export function getFeatureLaunchEmail(email) {
+export function getFeatureLaunchEmail(_email) {
   return `
     <!DOCTYPE html>
     <html>

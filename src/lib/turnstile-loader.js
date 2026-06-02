@@ -89,6 +89,6 @@ export function loadTurnstile() {
  * Check if Turnstile is already loaded
  */
 export function isTurnstileLoaded() {
-  return typeof window !== 'undefined' && window.turnstile !== undefined
+  return turnstileLoaded && typeof window !== 'undefined' && window.turnstile !== undefined
 }
 

@@ -21,7 +21,7 @@ export default function AdminPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isLoadingUsers, setIsLoadingUsers] = useState(false)
   const [isLoadingFeedback, setIsLoadingFeedback] = useState(false)
-  const [error, setError] = useState('')
+  const [, setError] = useState('')
   const [deletingFeedback, setDeletingFeedback] = useState({})
   const [selectedFeedback, setSelectedFeedback] = useState(null)
   const [selectedEmails, setSelectedEmails] = useState([])

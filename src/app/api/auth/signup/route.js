@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { PrismaClient } from '@/generated/prisma'
 import bcrypt from 'bcryptjs'
+import { isValidEmail, isValidPassword, normalizeEmail } from '@/lib/validation'
 
 const prisma = new PrismaClient()
 
@@ -13,19 +14,21 @@ export async function POST(request) {
     const { email, password, name, turnstileToken } = await request.json()
 
     // Validation
-    if (!email || !email.includes('@')) {
+    if (!isValidEmail(email)) {
       return NextResponse.json(
         { error: 'Valid email is required' },
         { status: 400 }
       )
     }
 
-    if (!password || password.length < 6) {
+    if (!isValidPassword(password)) {
       return NextResponse.json(
         { error: 'Password must be at least 6 characters' },
         { status: 400 }
       )
     }
+
+    const normalizedEmail = normalizeEmail(email)
 
     // Verify Turnstile token
     if (!turnstileToken) {
@@ -67,7 +70,7 @@ export async function POST(request) {
 
     // Check if user already exists
     const existing = await prisma.user.findUnique({
-      where: { email: email.toLowerCase().trim() }
+      where: { email: normalizedEmail }
     })
 
     if (existing) {
@@ -83,7 +86,7 @@ export async function POST(request) {
     // Create user with GUEST role
     const user = await prisma.user.create({
       data: {
-        email: email.toLowerCase().trim(),
+        email: normalizedEmail,
         password: hashedPassword,
         name: name || null,
         role: 'GUEST' // Default role

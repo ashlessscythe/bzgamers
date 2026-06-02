@@ -15,7 +15,7 @@ import {
  * GameCard component for displaying individual game information
  */
 export default function GameCard({ game, onFavoriteChange }) {
-  const { data: session, status } = useSession()
+  const { status } = useSession()
   const [isFavorited, setIsFavorited] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [showAuthMessage, setShowAuthMessage] = useState(false)
@@ -44,6 +44,7 @@ export default function GameCard({ game, onFavoriteChange }) {
     if (status === 'authenticated' && gameId) {
       checkFavoriteStatus()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- check when auth/game changes only
   }, [status, gameId])
 
   // Safety check for undefined game

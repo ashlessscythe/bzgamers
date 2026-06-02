@@ -1,5 +1,6 @@
 import { PrismaClient } from '../generated/prisma'
 import bcrypt from 'bcryptjs'
+import { normalizeEmail } from './validation'
 
 const prisma = new PrismaClient()
 
@@ -11,7 +12,7 @@ const prisma = new PrismaClient()
  */
 export async function verifyCredentials(email, password) {
   try {
-    const normalizedEmail = email.toLowerCase().trim()
+    const normalizedEmail = normalizeEmail(email)
     console.log('[AUTH] Attempting to verify credentials for:', normalizedEmail)
     
     const user = await prisma.user.findUnique({
@@ -54,7 +55,7 @@ export async function createUser(email, password, name = null, role = 'GUEST') {
   
   const user = await prisma.user.create({
     data: {
-      email: email.toLowerCase(),
+      email: normalizeEmail(email),
       password: hashedPassword,
       name,
       role
@@ -73,7 +74,7 @@ export async function createUser(email, password, name = null, role = 'GUEST') {
 export async function getUserByEmail(email) {
   try {
     const user = await prisma.user.findUnique({
-      where: { email: email.toLowerCase() }
+      where: { email: normalizeEmail(email) }
     })
 
     if (!user) {

@@ -20,8 +20,6 @@ export default function GameResults({
   availableYears = [],
   totalResults = 0
 }) {
-  console.log('GameResults component received:', { results, isLoading })
-  
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
   
   // Safety check for undefined or null results

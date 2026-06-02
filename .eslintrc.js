@@ -1,24 +1,21 @@
 module.exports = {
-  extends: [
-    'next/core-web-vitals',
-    'eslint:recommended',
-  ],
+  extends: ['next/core-web-vitals', 'eslint:recommended'],
   rules: {
-    // Add custom rules here
-    'no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
+    'no-unused-vars': [
+      'warn',
+      { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+    ],
     'no-console': ['warn', { allow: ['warn', 'error'] }],
+    '@next/next/no-img-element': 'off',
   },
   env: {
     browser: true,
     node: true,
     es6: true,
-    es2020: true, // Add ES2020 support for BigInt, globalThis, etc.
+    es2020: true,
   },
-  ignorePatterns: [
-    'src/generated/prisma/**/*', // Ignore generated Prisma files
-  ],
+  ignorePatterns: ['src/generated/prisma/**/*'],
   globals: {
-    // Add globals that are used in generated files
     globalThis: 'readonly',
     BigInt: 'readonly',
     SharedArrayBuffer: 'readonly',
@@ -28,4 +25,28 @@ module.exports = {
     SharedWorkerGlobalScope: 'readonly',
     ServiceWorkerGlobalScope: 'readonly',
   },
+  overrides: [
+    {
+      files: ['**/*.{test,spec}.{js,jsx}', 'vitest.setup.js', 'vitest.config.js'],
+      rules: {
+        'no-console': 'off',
+      },
+    },
+    {
+      files: [
+        'src/lib/api.js',
+        'src/lib/api-enhanced.js',
+        'src/lib/api-cache.js',
+        'src/lib/db-cache.js',
+        'src/lib/auth.js',
+        'src/lib/auth-config.js',
+        'src/lib/rate-limiter.js',
+        'src/app/api/**/*.js',
+        'src/app/games/page.js',
+      ],
+      rules: {
+        'no-console': 'off',
+      },
+    },
+  ],
 }

@@ -9,7 +9,7 @@ const prisma = new PrismaClient()
  * GET /api/favorites
  * Get all favorites for the authenticated user
  */
-export async function GET(request) {
+export async function GET(_request) {
   try {
     const session = await auth()
     

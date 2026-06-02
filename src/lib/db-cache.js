@@ -467,7 +467,7 @@ async function cacheImage(imageData, type) {
  */
 async function getCachedGamesByMood(params) {
   try {
-    const { genres, themes, platforms, minRating, maxPlaytime, releaseYear } = params
+    const { genres, themes, platforms, minRating, maxPlaytime: _maxPlaytime, releaseYear } = params
     
     let whereClause = {}
     

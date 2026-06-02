@@ -30,6 +30,7 @@ export default function GameDetailView({ game }) {
     if (status === 'authenticated' && game?.id) {
       checkFavoriteStatus()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- check when auth/game changes only
   }, [status, game?.id])
 
   const checkFavoriteStatus = async () => {

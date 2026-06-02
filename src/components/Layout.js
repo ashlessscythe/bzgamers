@@ -8,7 +8,7 @@ import ThemeToggle from './ThemeToggle'
 import MobileMenu from './MobileMenu'
 import AuthModal from './AuthModal'
 import FeedbackModal from './FeedbackModal'
-import { SITE_NAME, GH_URL } from '../lib/config'
+import { GH_URL } from '../lib/config'
 import { useCookieConsent } from './CookieConsentProvider'
 
 /**

@@ -81,8 +81,8 @@ export default function MobileMenu() {
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
         style={{ 
-          height: '100vh',
           height: '100dvh',
+          minHeight: '100vh',
           display: 'flex',
           flexDirection: 'column'
         }}
