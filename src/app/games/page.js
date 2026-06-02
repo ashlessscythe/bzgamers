@@ -1226,6 +1226,26 @@ function GamesContent() {
                           </div>
                         ) : (
                           <>
+                            <div className="flex flex-wrap gap-4 mb-6">
+                              <button
+                                onClick={() => {
+                                  setSearchStep(1)
+                                  setSearchQuery('')
+                                  setSearchResults([])
+                                  setSelectedGame(null)
+                                }}
+                                className="text-primary hover:text-primary-dark transition-colors"
+                              >
+                                ← Back to search
+                              </button>
+                              <button
+                                onClick={handleFindSimilar}
+                                disabled={!selectedGame || isLoading}
+                                className="btn-primary px-8 py-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                {isLoading ? 'Finding similar games...' : 'Give me a game like this'}
+                              </button>
+                            </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
                               {searchResults.map((game) => (
                                 <button
@@ -1269,7 +1289,7 @@ function GamesContent() {
                                 </button>
                               ))}
                             </div>
-                            <div className="flex gap-4">
+                            <div className="flex flex-wrap gap-4">
                               <button
                                 onClick={() => {
                                   setSearchStep(1)
