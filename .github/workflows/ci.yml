@@ -10,11 +10,26 @@ concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  # Placeholder values so Prisma generate / Next build can compile without secrets.
+  DATABASE_URL: postgresql://ci:ci@localhost:5432/ci?schema=public
+  AUTH_SECRET: ci-auth-secret
+  NEXTAUTH_SECRET: ci-auth-secret
+  NEXTAUTH_URL: http://localhost:3000
+  NEXT_PUBLIC_SITE_URL: http://localhost:3000
+  NEXT_PUBLIC_SITE_NAME: bzgamers-ci
+  NEXT_API_CLIENT_ID: ci-client-id
+  NEXT_API_CLIENT_SECRET: ci-client-secret
+  RESEND_API_KEY: re_ci_dummy_key
+  RESEND_FROM_EMAIL: CI <ci@example.com>
+  NEXT_TURNSTILE_SECRET_KEY: ci-turnstile-secret
+  NEXT_PUBLIC_TURNSTILE_SITE_KEY: ci-turnstile-site-key
+
 jobs:
   check:
-    name: Lint, typecheck & test
+    name: Lint, typecheck, test & build
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
 
     steps:
       - name: Checkout
@@ -31,9 +46,6 @@ jobs:
 
       - name: Generate Prisma client
         run: npx prisma generate
-        env:
-          # Schema requires DATABASE_URL; unit tests mock Prisma and do not need a live DB.
-          DATABASE_URL: postgresql://ci:ci@localhost:5432/ci?schema=public
 
       - name: Lint
         run: npm run lint
@@ -52,3 +64,6 @@ jobs:
           path: coverage/
           if-no-files-found: ignore
           retention-days: 14
+
+      - name: Production build
+        run: npm run build
