@@ -7,20 +7,42 @@ import { motion } from 'framer-motion'
 import FeedbackCard from '@/components/admin/FeedbackCard'
 import UserCard from '@/components/admin/UserCard'
 import WaitlistCard from '@/components/admin/WaitlistCard'
+import AnalyticsPanel from '@/components/admin/AnalyticsPanel'
 
 export default function AdminPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
-  const [activeTab, setActiveTab] = useState('waitlist') // 'waitlist', 'users', or 'feedback'
+  const [activeTab, setActiveTab] = useState('waitlist') // 'waitlist', 'users', 'feedback', or 'analytics'
   const [waitlist, setWaitlist] = useState([])
   const [stats, setStats] = useState({ total: 0, notified: 0, unnotified: 0 })
   const [users, setUsers] = useState([])
   const [userStats, setUserStats] = useState({ total: 0, admins: 0, guests: 0 })
   const [feedbacks, setFeedbacks] = useState([])
   const [feedbackStats, setFeedbackStats] = useState({ total: 0, withUser: 0, anonymous: 0 })
+  const [analyticsEvents, setAnalyticsEvents] = useState([])
+  const [analyticsStats, setAnalyticsStats] = useState({
+    totalEvents: 0,
+    uniqueVisitors: 0,
+    moodSearches: 0,
+    gameSearches: 0,
+    similarSearches: 0,
+    anonymousEvents: 0,
+    signedInEvents: 0,
+    favorites: 0,
+    byType: {},
+  })
+  const [analyticsTables, setAnalyticsTables] = useState({
+    topMoods: [],
+    topSearches: [],
+    topSimilarSeeds: [],
+    topTimes: [],
+    topGenres: [],
+  })
+  const [analyticsDays, setAnalyticsDays] = useState(30)
   const [isLoading, setIsLoading] = useState(true)
   const [isLoadingUsers, setIsLoadingUsers] = useState(false)
   const [isLoadingFeedback, setIsLoadingFeedback] = useState(false)
+  const [isLoadingAnalytics, setIsLoadingAnalytics] = useState(false)
   const [, setError] = useState('')
   const [deletingFeedback, setDeletingFeedback] = useState({})
   const [selectedFeedback, setSelectedFeedback] = useState(null)
@@ -44,6 +66,38 @@ export default function AdminPage() {
       fetchFeedbacks()
     }
   }, [status, session, router])
+
+  useEffect(() => {
+    if (status !== 'authenticated' || session?.user?.role !== 'ADMIN') return
+
+    let cancelled = false
+    const load = async () => {
+      try {
+        setIsLoadingAnalytics(true)
+        const response = await fetch(`/api/admin/analytics?days=${analyticsDays}&limit=100`)
+        const data = await response.json()
+        if (cancelled) return
+        if (data.success) {
+          setAnalyticsEvents(data.data)
+          setAnalyticsStats(data.stats)
+          setAnalyticsTables(data.tables)
+        } else {
+          setError('Failed to fetch analytics')
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError('Error fetching analytics')
+          console.error(err)
+        }
+      } finally {
+        if (!cancelled) setIsLoadingAnalytics(false)
+      }
+    }
+    load()
+    return () => {
+      cancelled = true
+    }
+  }, [status, session, analyticsDays])
 
   const fetchWaitlist = async () => {
     try {
@@ -118,6 +172,27 @@ export default function AdminPage() {
       console.error(err)
     } finally {
       setIsLoadingFeedback(false)
+    }
+  }
+
+  const fetchAnalytics = async (days = analyticsDays) => {
+    try {
+      setIsLoadingAnalytics(true)
+      const response = await fetch(`/api/admin/analytics?days=${days}&limit=100`)
+      const data = await response.json()
+
+      if (data.success) {
+        setAnalyticsEvents(data.data)
+        setAnalyticsStats(data.stats)
+        setAnalyticsTables(data.tables)
+      } else {
+        setError('Failed to fetch analytics')
+      }
+    } catch (err) {
+      setError('Error fetching analytics')
+      console.error(err)
+    } finally {
+      setIsLoadingAnalytics(false)
     }
   }
 
@@ -226,7 +301,7 @@ export default function AdminPage() {
     }
   }
 
-  if (status === 'loading' || (isLoading && activeTab === 'waitlist') || (isLoadingUsers && activeTab === 'users') || (isLoadingFeedback && activeTab === 'feedback')) {
+  if (status === 'loading' || (isLoading && activeTab === 'waitlist') || (isLoadingUsers && activeTab === 'users') || (isLoadingFeedback && activeTab === 'feedback') || (isLoadingAnalytics && activeTab === 'analytics' && analyticsEvents.length === 0)) {
     return (
       <div className="min-h-[calc(100vh-200px)] flex items-center justify-center">
         <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
@@ -279,6 +354,16 @@ export default function AdminPage() {
               }`}
             >
               Feedback Management
+            </button>
+            <button
+              onClick={() => setActiveTab('analytics')}
+              className={`px-4 py-2 font-medium border-b-2 transition-colors ${
+                activeTab === 'analytics'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+              }`}
+            >
+              Visitor Activity
             </button>
           </div>
         </div>
@@ -953,6 +1038,19 @@ export default function AdminPage() {
               </motion.div>
             )}
           </>
+        )}
+
+        {/* Visitor Activity Tab Content */}
+        {activeTab === 'analytics' && (
+          <AnalyticsPanel
+            stats={analyticsStats}
+            tables={analyticsTables}
+            events={analyticsEvents}
+            days={analyticsDays}
+            onDaysChange={setAnalyticsDays}
+            onRefresh={() => fetchAnalytics(analyticsDays)}
+            isLoading={isLoadingAnalytics}
+          />
         )}
       </div>
     </div>

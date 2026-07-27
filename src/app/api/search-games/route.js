@@ -6,6 +6,7 @@
 
 import { searchGames } from '@/lib/api'
 import { getCachedSearch, cacheSearch } from '@/lib/db-cache'
+import { trackVisitorEventAsync } from '@/lib/analytics'
 
 export async function POST(request) {
   try {
@@ -30,6 +31,12 @@ export async function POST(request) {
     if (offset === 0) {
       const cached = await getCachedSearch(cacheKey)
       if (cached) {
+        trackVisitorEventAsync(request, {
+          eventType: 'game_search',
+          searchQuery: query.trim(),
+          resultCount: Array.isArray(cached) ? cached.length : null,
+          metadata: { limit, offset, cached: true },
+        })
         return Response.json(cached)
       }
     }
@@ -46,6 +53,13 @@ export async function POST(request) {
       await cacheSearch(cacheKey, games)
     }
 
+    trackVisitorEventAsync(request, {
+      eventType: 'game_search',
+      searchQuery: query.trim(),
+      resultCount: Array.isArray(games) ? games.length : null,
+      metadata: { limit, offset, cached: false },
+    })
+
     return Response.json(games)
   } catch (error) {
     console.error('Error searching games:', error)
@@ -55,4 +69,3 @@ export async function POST(request) {
     )
   }
 }
-

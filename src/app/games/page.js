@@ -7,6 +7,7 @@ import GameResults from '@/components/GameResults'
 import GoToTopButton from '@/components/GoToTopButton'
 import { getUserFriendlyMessage } from '@/lib/error-handler'
 import { useCookieConsent } from '@/components/CookieConsentProvider'
+import { visitorHeaders } from '@/lib/visitor-id'
 
 // Available mood options - common ones first
 const COMMON_MOOD_OPTIONS = [
@@ -428,14 +429,20 @@ function GamesContent() {
       // Use simple search first - no advanced filters
       const params = {
         mood: selectedMood ? MOOD_MAP[selectedMood] : null,
+        moodLabel: selectedMood || null,
         timeAvailable: selectedTime ? TIME_MAP[selectedTime] : null,
-        genre: genreParam
+        timeLabel: selectedTime || null,
+        genre: genreParam,
+        genreLabel: typeof selectedGenre === 'string'
+          ? selectedGenre
+          : (selectedGenre?.name || null),
       }
       
       const response = await fetch('/api/games-by-mood', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...visitorHeaders(),
         },
         body: JSON.stringify(params)
       })
@@ -488,6 +495,7 @@ function GamesContent() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...visitorHeaders(),
         },
         body: JSON.stringify({ query: searchQuery, limit: 20 })
       })
@@ -522,8 +530,9 @@ function GamesContent() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...visitorHeaders(),
         },
-        body: JSON.stringify({ gameId: selectedGame.id })
+        body: JSON.stringify({ gameId: selectedGame.id, gameName: selectedGame.name })
       })
       
       if (!response.ok) {
@@ -617,9 +626,11 @@ function GamesContent() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            ...visitorHeaders(),
           },
           body: JSON.stringify({ 
             gameId: selectedGame.id,
+            gameName: selectedGame.name,
             offset: originalResults.length 
           })
         })
@@ -647,8 +658,13 @@ function GamesContent() {
         
         const params = {
           mood: selectedMood ? MOOD_MAP[selectedMood] : null,
+          moodLabel: selectedMood || null,
           timeAvailable: selectedTime ? TIME_MAP[selectedTime] : null,
+          timeLabel: selectedTime || null,
           genre: genreParam,
+          genreLabel: typeof selectedGenre === 'string'
+            ? selectedGenre
+            : (selectedGenre?.name || null),
           offset: originalResults.length // Start from where we left off
         }
         
@@ -656,6 +672,7 @@ function GamesContent() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            ...visitorHeaders(),
           },
           body: JSON.stringify(params)
         })

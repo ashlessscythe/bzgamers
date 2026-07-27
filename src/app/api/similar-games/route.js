@@ -7,6 +7,7 @@
 
 import { fetchGames } from '../../../lib/api'
 import { getCachedSearch, cacheSearch } from '../../../lib/db-cache'
+import { trackVisitorEventAsync } from '@/lib/analytics'
 
 const PAGE_SIZE = 12
 const CANDIDATE_POOL = 60
@@ -134,7 +135,7 @@ async function buildRankedSimilarGames(baseGame, gameId) {
 
 export async function POST(request) {
   try {
-    const { gameId, offset = 0 } = await request.json()
+    const { gameId, offset = 0, gameName } = await request.json()
 
     if (!gameId) {
       return Response.json({ error: 'Game ID is required' }, { status: 400 })
@@ -149,6 +150,13 @@ export async function POST(request) {
     if (offset === 0) {
       const cached = await getCachedSearch(cacheKey)
       if (cached) {
+        trackVisitorEventAsync(request, {
+          eventType: 'similar_search',
+          gameId,
+          gameName: gameName || null,
+          resultCount: Array.isArray(cached) ? cached.length : null,
+          metadata: { offset, cached: true },
+        })
         return Response.json(cached)
       }
     }
@@ -174,6 +182,14 @@ export async function POST(request) {
     if (offset === 0) {
       await cacheSearch(cacheKey, page)
     }
+
+    trackVisitorEventAsync(request, {
+      eventType: 'similar_search',
+      gameId,
+      gameName: gameName || baseGame.name || null,
+      resultCount: Array.isArray(page) ? page.length : null,
+      metadata: { offset, cached: false },
+    })
 
     return Response.json(page)
   } catch (error) {

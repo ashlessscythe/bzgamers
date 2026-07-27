@@ -7,6 +7,7 @@
 
 import { findGamesByMood } from '@/lib/api'
 import { getCachedSearch, cacheSearch } from '@/lib/db-cache'
+import { trackVisitorEventAsync } from '@/lib/analytics'
 
 export async function POST(request) {
   try {
@@ -20,13 +21,32 @@ export async function POST(request) {
       )
     }
     
-    const { mood, timeAvailable, genre, offset = 0 } = body
+    const {
+      mood,
+      timeAvailable,
+      genre,
+      offset = 0,
+      moodLabel,
+      timeLabel,
+      genreLabel,
+    } = body
     const params = { mood, timeAvailable, genre, offset }
 
     // 1. Try to get cached results (only for first page)
     if (offset === 0) {
       const cached = await getCachedSearch({ mood, timeAvailable, genre })
       if (cached) {
+        trackVisitorEventAsync(request, {
+          eventType: 'mood_search',
+          mood,
+          moodLabel,
+          timeAvailable,
+          timeLabel,
+          genre,
+          genreLabel,
+          resultCount: Array.isArray(cached) ? cached.length : null,
+          metadata: { offset, cached: true },
+        })
         return Response.json(cached)
       }
     }
@@ -39,6 +59,18 @@ export async function POST(request) {
       await cacheSearch({ mood, timeAvailable, genre }, games)
     }
 
+    trackVisitorEventAsync(request, {
+      eventType: 'mood_search',
+      mood,
+      moodLabel,
+      timeAvailable,
+      timeLabel,
+      genre,
+      genreLabel,
+      resultCount: Array.isArray(games) ? games.length : null,
+      metadata: { offset, cached: false },
+    })
+
     return Response.json(games)
   } catch (error) {
     console.error('Error finding games by mood:', error)
@@ -47,4 +79,4 @@ export async function POST(request) {
       { status: 500 }
     )
   }
-} 
+}
