@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { PrismaClient } from '@/generated/prisma'
 import { auth } from '@/lib/auth-config'
 import { enrichFavorites } from '@/lib/favorite-enrichment'
+import { trackVisitorEventAsync } from '@/lib/analytics'
 
 const prisma = new PrismaClient()
 
@@ -93,6 +94,12 @@ export async function POST(request) {
         gameName: gameName || null,
         gameData: gameData || null
       }
+    })
+
+    trackVisitorEventAsync(request, {
+      eventType: 'favorite_add',
+      gameId,
+      gameName: gameName || null,
     })
 
     return NextResponse.json({

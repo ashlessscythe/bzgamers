@@ -254,6 +254,7 @@ model User {
   favorites     Favorite[]
   passwordResets PasswordResetToken[]
   feedback      Feedback[]
+  visitorEvents VisitorEvent[]
   
   @@index([email])
   @@index([role])
@@ -319,6 +320,38 @@ model Feedback {
   @@index([email])
   @@index([userId])
   @@index([createdAt])
+}
+
+// Anonymous + signed-in visitor activity (searches, mood picks, similar-game flows)
+model VisitorEvent {
+  id            Int      @id @default(autoincrement())
+  visitorId     String   // Anonymous fingerprint (works without sign-in)
+  userId        Int?     // Linked when the visitor is signed in
+  eventType     String   // mood_search | game_search | similar_search | favorite_add | mode_select
+  searchQuery   String?  // Free-text typed into "games like this" search
+  mood          String?  // API mood key (e.g. excited)
+  moodLabel     String?  // UI mood label (e.g. Energetic)
+  timeAvailable String?  // API time bucket (short/medium/long)
+  timeLabel     String?  // UI time label
+  genre         String?  // Genre id or name sent to API
+  genreLabel    String?  // Display genre label when available
+  gameId        Int?     // Seed / selected / favorited IGDB game id
+  gameName      String?
+  resultCount   Int?
+  metadata      Json?    // Extra context (offset, filters, etc.)
+  userAgent     String?
+  createdAt     DateTime @default(now())
+
+  user          User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([eventType])
+  @@index([visitorId])
+  @@index([userId])
+  @@index([createdAt])
+  @@index([mood])
+  @@index([moodLabel])
+  @@index([searchQuery])
+  @@index([gameId])
 }
 
 // Enums

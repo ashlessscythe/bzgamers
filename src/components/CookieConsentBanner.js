@@ -19,7 +19,8 @@ export default function CookieConsentBanner() {
           </p>
           <p id="cookie-consent-desc" className="mt-1 text-sm text-gray-600 dark:text-gray-400">
             Sign-in uses essential cookies. We can also remember your theme and game search on this device.
-            We do not use advertising or analytics trackers.
+            We do not use advertising or third-party analytics trackers. Anonymous search activity may be
+            logged on our servers to improve recommendations.
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2 sm:shrink-0">
