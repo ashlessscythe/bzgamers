@@ -1,10 +1,14 @@
 import '@testing-library/jest-dom/vitest'
-import { configure } from '@testing-library/react'
-import { vi } from 'vitest'
+import { configure, cleanup } from '@testing-library/react'
+import { afterEach, vi } from 'vitest'
 import React from 'react'
 import { authMocks } from './src/test/auth-mocks'
 
 configure({ reactStrictMode: false })
+
+afterEach(() => {
+  cleanup()
+})
 
 vi.mock('next-auth/react', () => ({
   useSession: (...args) => authMocks.useSession(...args),

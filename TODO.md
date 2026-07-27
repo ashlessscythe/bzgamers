@@ -13,7 +13,7 @@ This document outlines the steps needed to complete the BZGamers MVP, organized 
   - [x] Configure Tailwind CSS
   - [x] Set up project structure (pages, components, styles)
   - [x] Create initial README.md
-  - [ ] Set up CI/CD pipeline (optional)
+  - [x] Set up CI/CD pipeline (optional)
 - [x] Configure development environment
   - [x] Install necessary dependencies (Next.js, Tailwind, Framer Motion)
   - [x] Set up ESLint and Prettier
@@ -102,7 +102,8 @@ This document outlines the steps needed to complete the BZGamers MVP, organized 
   - [ ] Add page transitions
   - [x] Implement micro-interactions
   - [ ] Optimize animation performance
-- [ ] Perform testing
+- [x] Perform testing
+  - [x] Unit/API Vitest suite with coverage gates in CI
   - [ ] Cross-browser testing
   - [ ] Mobile responsiveness testing
   - [ ] Performance optimization

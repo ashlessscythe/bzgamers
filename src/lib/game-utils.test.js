@@ -6,6 +6,7 @@ import {
   getIgdbFallbackUrl,
   getLearnMoreUrl,
   getCoverImageUrl,
+  isStaleGameData,
 } from './game-utils'
 
 describe('getGameId', () => {
@@ -87,5 +88,24 @@ describe('getCoverImageUrl', () => {
 
   it('returns null when cover is not resolvable', () => {
     expect(getCoverImageUrl(null)).toBe(null)
+  })
+})
+
+describe('isStaleGameData', () => {
+  it('treats missing or incomplete snapshots as stale', () => {
+    expect(isStaleGameData(null, 1)).toBe(true)
+    expect(isStaleGameData({ id: 1, url: 'https://x' }, 1)).toBe(true)
+    expect(
+      isStaleGameData({ id: 2, url: 'https://x', cover: { image_id: 'a' } }, 1)
+    ).toBe(true)
+  })
+
+  it('accepts complete snapshots', () => {
+    expect(
+      isStaleGameData(
+        { id: 1, url: 'https://www.igdb.com/games/1', cover: { image_id: 'co1' } },
+        1
+      )
+    ).toBe(false)
   })
 })

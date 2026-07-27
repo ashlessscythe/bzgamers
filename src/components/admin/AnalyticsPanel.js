@@ -90,6 +90,7 @@ export default function AnalyticsPanel({
         <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
           Range
           <select
+            data-testid="analytics-days"
             value={days}
             onChange={(e) => onDaysChange(Number(e.target.value))}
             className="ml-2 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
@@ -99,7 +100,12 @@ export default function AnalyticsPanel({
             <option value={90}>Last 90 days</option>
           </select>
         </label>
-        <button onClick={onRefresh} className="btn-secondary px-6 py-2" disabled={isLoading}>
+        <button
+          data-testid="analytics-refresh"
+          onClick={onRefresh}
+          className="btn-secondary px-6 py-2"
+          disabled={isLoading}
+        >
           {isLoading ? 'Refreshing…' : 'Refresh'}
         </button>
       </div>
