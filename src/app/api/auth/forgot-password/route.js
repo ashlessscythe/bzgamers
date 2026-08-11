@@ -1,12 +1,11 @@
 import { NextResponse } from 'next/server'
 import { PrismaClient } from '@/generated/prisma'
-import { Resend } from 'resend'
 import { getPasswordResetEmail } from '@/lib/email-templates'
+import { getResend } from '@/lib/resend'
 import crypto from 'crypto'
 import { isValidEmail, normalizeEmail } from '@/lib/validation'
 
 const prisma = new PrismaClient()
-const resend = new Resend(process.env.RESEND_API_KEY)
 
 /**
  * POST /api/auth/forgot-password
@@ -126,7 +125,7 @@ export async function POST(request) {
       const fromEmail = process.env.RESEND_FROM_EMAIL || 'BZGamers <onboarding@resend.dev>'
       const emailHtml = getPasswordResetEmail(user.email, resetUrl, user.name)
 
-      const { error: emailError } = await resend.emails.send({
+      const { error: emailError } = await getResend().emails.send({
         from: fromEmail,
         to: user.email,
         subject: 'Reset Your Password - BZGamers',

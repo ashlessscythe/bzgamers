@@ -47,6 +47,7 @@ describe('POST /api/auth/forgot-password', () => {
     vi.clearAllMocks()
     process.env.NEXT_TURNSTILE_SECRET_KEY = 'test-secret'
     process.env.NEXTAUTH_URL = 'http://localhost:3000'
+    process.env.RESEND_API_KEY = 're_test_key'
     mockEmailsSend.mockResolvedValue({ error: null })
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
@@ -57,6 +58,7 @@ describe('POST /api/auth/forgot-password', () => {
   afterEach(() => {
     global.fetch = originalFetch
     delete process.env.NEXT_TURNSTILE_SECRET_KEY
+    delete process.env.RESEND_API_KEY
   })
 
   it.each(['', '@', 'a@b'])('rejects malformed email: %s', async (email) => {

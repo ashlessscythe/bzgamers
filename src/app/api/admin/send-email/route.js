@@ -1,11 +1,10 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth-config'
-import { Resend } from 'resend'
 import { PrismaClient } from '@/generated/prisma'
 import { getWaitlistWelcomeEmail } from '@/lib/email-templates'
+import { getResend } from '@/lib/resend'
 
 const prisma = new PrismaClient()
-const resend = new Resend(process.env.RESEND_API_KEY)
 
 /**
  * POST /api/admin/send-email
@@ -80,7 +79,7 @@ export async function POST(request) {
           ? getWaitlistWelcomeEmail(emailData.email)
           : emailMessage.replace(/\n/g, '<br>')
         
-        const { data, error } = await resend.emails.send({
+        const { data, error } = await getResend().emails.send({
           from: fromEmail,
           to: emailData.email,
           subject: emailSubject,
