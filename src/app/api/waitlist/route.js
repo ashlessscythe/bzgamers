@@ -1,11 +1,10 @@
 import { NextResponse } from 'next/server'
 import { PrismaClient } from '../../../generated/prisma'
-import { Resend } from 'resend'
 import { getWaitlistAutoWelcomeEmail } from '../../../lib/email-templates'
+import { getResend } from '../../../lib/resend'
 import { isValidEmail, normalizeEmail } from '../../../lib/validation'
 
 const prisma = new PrismaClient()
-const resend = new Resend(process.env.RESEND_API_KEY)
 
 /**
  * POST /api/waitlist
@@ -52,7 +51,7 @@ export async function POST(request) {
       const fromEmail = process.env.RESEND_FROM_EMAIL || 'BZGamers <onboarding@resend.dev>'
       const emailHtml = getWaitlistAutoWelcomeEmail(normalizedEmail)
       
-      const { error: sendError } = await resend.emails.send({
+      const { error: sendError } = await getResend().emails.send({
         from: fromEmail,
         to: normalizedEmail,
         subject: 'Thanks for Joining BZGamers Waitlist! 🎮',
