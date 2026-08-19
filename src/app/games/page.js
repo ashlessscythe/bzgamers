@@ -1365,13 +1365,32 @@ function GamesContent() {
                 <div className="mb-6 p-4 bg-gradient-to-r from-primary/10 to-primary/5 dark:from-primary/20 dark:to-primary/10 rounded-lg border border-primary/20">
                   {selectedGame ? (
                     <>
-                      <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
-                        Games similar to <span className="font-semibold text-primary dark:text-blue-400">{selectedGame.name}</span>
-                        {selectedGame.platforms && selectedGame.platforms.length > 0 && (
-                          <span className="text-sm text-gray-600 dark:text-gray-400 ml-2">
-                            (filtered to {selectedGame.platforms.map(p => p.name).join(', ')})
-                          </span>
-                        )}
+                      <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed flex items-start gap-3">
+                        <a
+                          href={`/games/${selectedGame.id}`}
+                          className="flex-shrink-0 mt-1"
+                          aria-label={`View ${selectedGame.name} page`}
+                        >
+                          <img
+                            src={
+                              selectedGame.cover?.url?.replace('t_thumb', 't_cover_small') ||
+                              selectedGame.cover?.url ||
+                              'https://via.placeholder.com/48x70?text=No+Image'
+                            }
+                            alt={`${selectedGame.name} cover`}
+                            className="w-10 h-14 object-cover rounded"
+                            loading="lazy"
+                          />
+                        </a>
+                        <span>
+                          Games similar to{' '}
+                          <span className="font-semibold text-primary dark:text-blue-400">{selectedGame.name}</span>
+                          {selectedGame.platforms && selectedGame.platforms.length > 0 && (
+                            <span className="text-sm text-gray-600 dark:text-gray-400 ml-2">
+                              (filtered to {selectedGame.platforms.map(p => p.name).join(', ')})
+                            </span>
+                          )}
+                        </span>
                       </p>
                       <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
                         Found <span className="font-semibold text-primary dark:text-blue-400">{originalResults.length}</span> similar games!
