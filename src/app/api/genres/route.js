@@ -14,8 +14,7 @@ export async function GET() {
   } catch (error) {
     console.error('Error fetching genres:', error)
     return Response.json({ 
-      error: 'Failed to fetch genres',
-      message: error.message || 'Unknown error'
+      error: 'Failed to fetch genres'
     }, { status: 500 })
   }
 } 

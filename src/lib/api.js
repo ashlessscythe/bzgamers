@@ -16,6 +16,7 @@ const { withCache, setCachedItem, getCachedItem } = require('./api-cache')
 const { handleApiError, ERROR_TYPES, createError } = require('./error-handler')
 const { MOCK_GENRES, MOCK_GAMES, filterGamesByMood } = require('./mock-data')
 const rateLimiter = require('./rate-limiter')
+const { escapeIgdbString, toIgdbId, clampInt } = require('./igdb-sanitize')
 
 // Flag to determine if we're using mock data
 const USE_MOCK_DATA = process.env.NODE_ENV === 'development' && 
@@ -269,7 +270,7 @@ const fetchGameById = withCache(
     const { GAME_DETAIL_FIELDS } = require('./game-utils')
     const results = await igdbRequest(
       'games',
-      `fields ${GAME_DETAIL_FIELDS}; where id = ${gameId};`
+      `fields ${GAME_DETAIL_FIELDS}; where id = ${toIgdbId(gameId)};`
     )
     
     if (results.length === 0) {
@@ -296,7 +297,7 @@ const searchGames = withCache(
       throw createError(ERROR_TYPES.VALIDATION, 'Search query is missing')
     }
     
-    const query = `fields ${fields}; search "${searchQuery}"; limit ${limit}; offset ${offset};`
+    const query = `fields ${fields}; search "${escapeIgdbString(searchQuery)}"; limit ${clampInt(limit, 1, 50, 20)}; offset ${clampInt(offset, 0, 5000, 0)};`
     
     return igdbRequest('games', query)
   },
@@ -363,13 +364,13 @@ const findGamesByMood = withCache(
       // Check if genre is a number (ID) or string (name)
       let genreFilter;
       
-      if (isNaN(genre)) {
-        // For string genre names, use a case-insensitive search
-        // Use a more flexible search pattern
-        genreFilter = `genres.name ~ "${genre}"`
-      } else {
+      const genreNum = Number(genre)
+      if (Number.isInteger(genreNum) && genreNum > 0) {
         // For numeric IDs, use exact match
-        genreFilter = `genres = (${genre})`
+        genreFilter = `genres = (${genreNum})`
+      } else {
+        // For string genre names, use a case-insensitive search (escaped)
+        genreFilter = `genres.name ~ "${escapeIgdbString(genre)}"`
       }
       
       whereClause.push(genreFilter)

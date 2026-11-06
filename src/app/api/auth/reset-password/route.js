@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { rateLimit } from '@/lib/request-limiter'
 import { PrismaClient } from '@/generated/prisma'
 import bcrypt from 'bcryptjs'
 
@@ -10,6 +11,9 @@ const prisma = new PrismaClient()
  */
 export async function POST(request) {
   try {
+    const limited = rateLimit(request, 'reset-password', { limit: 10, windowMs: 3600000 })
+    if (limited) return limited
+
     let body
     try {
       body = await request.json()
@@ -23,14 +27,14 @@ export async function POST(request) {
     const { token, password } = body
 
     // Validation
-    if (!token) {
+    if (!token || typeof token !== 'string' || token.length > 128) {
       return NextResponse.json(
         { error: 'Reset token is required' },
         { status: 400 }
       )
     }
 
-    if (!password || password.length < 6) {
+    if (typeof password !== 'string' || password.length < 6 || password.length > 200) {
       return NextResponse.json(
         { error: 'Password must be at least 6 characters' },
         { status: 400 }

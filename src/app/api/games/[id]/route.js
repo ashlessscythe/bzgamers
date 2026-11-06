@@ -16,12 +16,13 @@ export async function GET(request, { params }) {
     const game = await fetchGameById(gameId)
     return Response.json({ success: true, game })
   } catch (error) {
+    console.error('Error fetching game:', error)
     const message = error.message || 'Unknown error'
     const isNotFound =
       message.includes('not found') || message.includes('NOT_FOUND')
 
     return Response.json(
-      { error: 'Failed to fetch game', message },
+      { error: isNotFound ? 'Game not found' : 'Failed to fetch game' },
       { status: isNotFound ? 404 : 500 }
     )
   }

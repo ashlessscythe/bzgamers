@@ -1,6 +1,7 @@
 import NextAuth from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { verifyCredentials } from './auth'
+import { rateLimit } from './request-limiter'
 
 export const authOptions = {
   providers: [
@@ -10,7 +11,10 @@ export const authOptions = {
         email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' }
       },
-      async authorize(credentials) {
+      async authorize(credentials, request) {
+        if (request && rateLimit(request, 'login', { limit: 10, windowMs: 15 * 60_000 })) {
+          return null
+        }
         if (!credentials?.email || !credentials?.password) {
           console.log('[AUTH] Missing credentials')
           return null
@@ -24,7 +28,6 @@ export const authOptions = {
             return null
           }
 
-          console.log('[AUTH] Authorization successful for:', user.email)
           return {
             id: user.id.toString(),
             email: user.email,

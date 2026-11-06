@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { rateLimit } from '@/lib/request-limiter'
 import { PrismaClient } from '@/generated/prisma'
 import bcrypt from 'bcryptjs'
 import { isValidEmail, isValidPassword, normalizeEmail } from '@/lib/validation'
@@ -11,7 +12,17 @@ const prisma = new PrismaClient()
  */
 export async function POST(request) {
   try {
+    const limited = rateLimit(request, 'signup', { limit: 5, windowMs: 3600000 })
+    if (limited) return limited
+
     const { email, password, name, turnstileToken } = await request.json()
+
+    if (typeof password === 'string' && password.length > 200) {
+      return NextResponse.json({ error: 'Password is too long' }, { status: 400 })
+    }
+    if (name != null && (typeof name !== 'string' || name.length > 100)) {
+      return NextResponse.json({ error: 'Invalid name' }, { status: 400 })
+    }
 
     // Validation
     if (!isValidEmail(email)) {
@@ -104,7 +115,7 @@ export async function POST(request) {
   } catch (error) {
     console.error('Error creating user:', error)
     return NextResponse.json(
-      { error: 'Failed to create account', details: error.message },
+      { error: 'Failed to create account' },
       { status: 500 }
     )
   }

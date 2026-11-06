@@ -75,7 +75,7 @@ export async function POST(request) {
   } catch (error) {
     console.error('Error finding games by mood:', error)
     return Response.json(
-      { error: 'Failed to find games', message: error.message || 'Unknown error' },
+      { error: 'Failed to find games' },
       { status: 500 }
     )
   }

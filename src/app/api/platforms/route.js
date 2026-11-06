@@ -14,8 +14,7 @@ export async function GET() {
   } catch (error) {
     console.error('Error fetching platforms:', error)
     return Response.json({ 
-      error: 'Failed to fetch platforms',
-      message: error.message || 'Unknown error'
+      error: 'Failed to fetch platforms'
     }, { status: 500 })
   }
 } 

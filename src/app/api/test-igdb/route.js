@@ -21,8 +21,18 @@ import {
   fetchThemes,
   testApiConnection
 } from '../../../lib/api';
+import { auth } from '@/lib/auth-config'
+
+async function requireAdmin() {
+  const session = await auth()
+  return session?.user?.role === 'ADMIN'
+}
 
 export async function GET() {
+  if (!(await requireAdmin())) {
+    return Response.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   const results = {
     timestamp: new Date().toISOString(),
     tests: {}
@@ -34,7 +44,7 @@ export async function GET() {
       const connectionTest = await testApiConnection();
       results.tests.connection = {
         status: connectionTest.status === 'success' ? 'success' : 'failed',
-        details: connectionTest
+        details: { status: connectionTest.status }
       };
       
       // If connection failed, return early
@@ -48,7 +58,7 @@ export async function GET() {
     } catch (error) {
       results.tests.connection = {
         status: 'failed',
-        error: error.message
+        error: 'Test failed'
       };
       
       return Response.json({
@@ -74,7 +84,7 @@ export async function GET() {
     } catch (error) {
       results.tests.fetchGames = {
         status: 'failed',
-        error: error.message
+        error: 'Test failed'
       };
     }
     
@@ -93,7 +103,7 @@ export async function GET() {
     } catch (error) {
       results.tests.searchGames = {
         status: 'failed',
-        error: error.message
+        error: 'Test failed'
       };
     }
     
@@ -109,7 +119,7 @@ export async function GET() {
     } catch (error) {
       results.tests.fetchGenres = {
         status: 'failed',
-        error: error.message
+        error: 'Test failed'
       };
     }
     
@@ -125,7 +135,7 @@ export async function GET() {
     } catch (error) {
       results.tests.fetchThemes = {
         status: 'failed',
-        error: error.message
+        error: 'Test failed'
       };
     }
     
@@ -144,7 +154,7 @@ export async function GET() {
     } catch (error) {
       results.tests.findGamesByMood = {
         status: 'failed',
-        error: error.message
+        error: 'Test failed'
       };
     }
     
@@ -164,7 +174,7 @@ export async function GET() {
     return Response.json({
       status: 'error',
       message: 'An unexpected error occurred during testing.',
-      error: error.message,
+      error: 'Test failed',
       timestamp: new Date().toISOString()
     }, { status: 500 });
   }

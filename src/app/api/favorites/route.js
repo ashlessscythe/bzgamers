@@ -39,7 +39,7 @@ export async function GET(_request) {
   } catch (error) {
     console.error('Error fetching favorites:', error)
     return NextResponse.json(
-      { error: 'Failed to fetch favorites', details: error.message },
+      { error: 'Failed to fetch favorites' },
       { status: 500 }
     )
   }
@@ -61,6 +61,12 @@ export async function POST(request) {
     }
 
     const { gameId, gameName, gameData } = await request.json()
+
+    if (!Number.isInteger(Number(gameId)) || Number(gameId) <= 0 ||
+        (gameName != null && (typeof gameName !== 'string' || gameName.length > 300)) ||
+        (gameData != null && JSON.stringify(gameData).length > 20000)) {
+      return NextResponse.json({ error: 'Invalid favorite data' }, { status: 400 })
+    }
 
     if (!gameId) {
       return NextResponse.json(
@@ -110,7 +116,7 @@ export async function POST(request) {
   } catch (error) {
     console.error('Error adding favorite:', error)
     return NextResponse.json(
-      { error: 'Failed to add favorite', details: error.message },
+      { error: 'Failed to add favorite' },
       { status: 500 }
     )
   }
@@ -172,7 +178,7 @@ export async function DELETE(request) {
   } catch (error) {
     console.error('Error removing favorite:', error)
     return NextResponse.json(
-      { error: 'Failed to remove favorite', details: error.message },
+      { error: 'Failed to remove favorite' },
       { status: 500 }
     )
   }

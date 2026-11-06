@@ -8,6 +8,8 @@
 import { fetchGames } from '../../../lib/api'
 import { getCachedSearch, cacheSearch } from '../../../lib/db-cache'
 import { trackVisitorEventAsync } from '@/lib/analytics'
+import { toIgdbId, clampInt } from '@/lib/igdb-sanitize'
+import { rateLimit } from '@/lib/request-limiter'
 
 const PAGE_SIZE = 12
 const CANDIDATE_POOL = 60
@@ -135,10 +137,23 @@ async function buildRankedSimilarGames(baseGame, gameId) {
 
 export async function POST(request) {
   try {
-    const { gameId, offset = 0, gameName } = await request.json()
+    const limited = rateLimit(request, 'similar-games', { limit: 60, windowMs: 60_000 })
+    if (limited) return limited
 
-    if (!gameId) {
+    const body = await request.json()
+    const { gameName: rawGameName } = body
+    const gameName = typeof rawGameName === 'string' ? rawGameName.slice(0, 200) : null
+    const offset = clampInt(body.offset, 0, 1000, 0)
+
+    if (!body.gameId) {
       return Response.json({ error: 'Game ID is required' }, { status: 400 })
+    }
+
+    let gameId
+    try {
+      gameId = toIgdbId(body.gameId)
+    } catch {
+      return Response.json({ error: 'Invalid game ID' }, { status: 400 })
     }
 
     const cacheKey = {
@@ -204,15 +219,11 @@ export async function POST(request) {
     } else if (error.status === 404) {
       errorMessage = 'Game not found'
       statusCode = 404
-    } else if (error.message) {
-      errorMessage = error.message
     }
 
     return Response.json(
       {
         error: errorMessage,
-        message: error.message || 'Unknown error',
-        details: process.env.NODE_ENV === 'development' ? error.stack : undefined,
       },
       { status: statusCode }
     )

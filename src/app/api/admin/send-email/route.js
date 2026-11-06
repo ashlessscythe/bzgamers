@@ -87,7 +87,7 @@ export async function POST(request) {
         })
 
         if (error) {
-          errors.push({ email: emailData.email, error: error.message })
+          errors.push({ email: emailData.email, error: 'Send failed' })
         } else {
           // Mark as notified
           await prisma.waitlistEmail.update({
@@ -105,7 +105,8 @@ export async function POST(request) {
           await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_EMAILS))
         }
       } catch (err) {
-        errors.push({ email: emailData.email, error: err.message })
+        console.error('Send error:', err)
+        errors.push({ email: emailData.email, error: 'Send failed' })
         
         // Still add delay even on error to maintain rate limit
         if (i < emails.length - 1) {
@@ -124,7 +125,7 @@ export async function POST(request) {
   } catch (error) {
     console.error('Error sending emails:', error)
     return NextResponse.json(
-      { error: 'Failed to send emails', details: error.message },
+      { error: 'Failed to send emails' },
       { status: 500 }
     )
   }

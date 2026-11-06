@@ -23,7 +23,7 @@ export async function POST(request) {
 
     const { gameIds } = await request.json()
 
-    if (!Array.isArray(gameIds) || gameIds.length === 0) {
+    if (!Array.isArray(gameIds) || gameIds.length === 0 || gameIds.length > 200) {
       return NextResponse.json({
         success: true,
         favoritedGameIds: []
@@ -35,7 +35,7 @@ export async function POST(request) {
       where: {
         userId: parseInt(session.user.id),
         gameId: {
-          in: gameIds.map(id => parseInt(id))
+          in: gameIds.map(id => parseInt(id)).filter(Number.isInteger)
         }
       },
       select: {
@@ -52,7 +52,7 @@ export async function POST(request) {
   } catch (error) {
     console.error('Error checking favorites:', error)
     return NextResponse.json(
-      { error: 'Failed to check favorites', details: error.message },
+      { error: 'Failed to check favorites' },
       { status: 500 }
     )
   }

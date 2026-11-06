@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { rateLimit } from '@/lib/request-limiter'
 import { PrismaClient } from '@/generated/prisma'
 import { getPasswordResetEmail } from '@/lib/email-templates'
 import { getResend } from '@/lib/resend'
@@ -14,6 +15,9 @@ const prisma = new PrismaClient()
  */
 export async function POST(request) {
   try {
+    const limited = rateLimit(request, 'forgot-password', { limit: 5, windowMs: 3600000 })
+    if (limited) return limited
+
     let body
     try {
       body = await request.json()

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { PrismaClient } from '../../../generated/prisma'
 import { getWaitlistAutoWelcomeEmail } from '../../../lib/email-templates'
 import { getResend } from '../../../lib/resend'
+import { rateLimit } from '../../../lib/request-limiter'
 import { isValidEmail, normalizeEmail } from '../../../lib/validation'
 
 const prisma = new PrismaClient()
@@ -12,6 +13,9 @@ const prisma = new PrismaClient()
  */
 export async function POST(request) {
   try {
+    const limited = rateLimit(request, 'waitlist', { limit: 5, windowMs: 3600000 })
+    if (limited) return limited
+
     const { email } = await request.json()
 
     if (!isValidEmail(email)) {

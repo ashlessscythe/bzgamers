@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { rateLimit } from '@/lib/request-limiter'
 import { PrismaClient } from '@/generated/prisma'
 import { auth } from '@/lib/auth-config'
 import { isValidEmail, normalizeEmail } from '@/lib/validation'
@@ -12,6 +13,9 @@ const prisma = new PrismaClient()
  */
 export async function POST(request) {
   try {
+    const limited = rateLimit(request, 'feedback', { limit: 5, windowMs: 3600000 })
+    if (limited) return limited
+
     let body
     try {
       body = await request.json()
@@ -23,6 +27,10 @@ export async function POST(request) {
     }
     
     const { name, email, message, turnstileToken } = body
+
+    if (typeof name !== 'string' || typeof message !== 'string' || name.length > 100 || message.length > 5000) {
+      return NextResponse.json({ error: 'Invalid name or message' }, { status: 400 })
+    }
 
     // Validation
     if (!name || name.trim().length === 0) {

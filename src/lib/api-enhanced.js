@@ -12,6 +12,7 @@ require('dotenv').config()
 const { handleApiError, ERROR_TYPES, createError } = require('./error-handler')
 const { MOCK_GENRES, MOCK_GAMES, filterGamesByMood } = require('./mock-data')
 const rateLimiter = require('./rate-limiter')
+const { escapeIgdbString, toIgdbId, toIgdbIdList, safeSort, clampInt } = require('./igdb-sanitize')
 const dbCache = require('./db-cache')
 
 // Flag to determine if we're using mock data
@@ -286,7 +287,7 @@ async function fetchGameById(gameId) {
 
   const results = await igdbRequest(
     'games',
-    `fields ${GAME_DETAIL_FIELDS}; where id = ${gameId};`
+    `fields ${GAME_DETAIL_FIELDS}; where id = ${toIgdbId(gameId)};`
   )
   
   if (results.length === 0) {
@@ -465,12 +466,13 @@ async function findGamesByMood({
     // Check if genre is a number (ID) or string (name)
     let genreFilter;
     
-    if (isNaN(genre)) {
-      // For string genre names, use a case-insensitive search
-      genreFilter = `genres.name ~ "${genre}"`
-    } else {
+    const genreNum = Number(genre)
+    if (Number.isInteger(genreNum) && genreNum > 0) {
       // For numeric IDs, use exact match
-      genreFilter = `genres = (${genre})`
+      genreFilter = `genres = (${genreNum})`
+    } else {
+      // For string genre names, use a case-insensitive search (escaped)
+      genreFilter = `genres.name ~ "${escapeIgdbString(genre)}"`
     }
     
     whereClause.push(genreFilter)
@@ -478,7 +480,7 @@ async function findGamesByMood({
 
   // Add platform filter
   if (platforms && platforms.length > 0) {
-    const platformIds = platforms.map(p => typeof p === 'number' ? p : p.id).join(',')
+    const platformIds = toIgdbIdList(platforms).join(',')
     whereClause.push(`platforms = (${platformIds})`)
   }
 
@@ -486,11 +488,11 @@ async function findGamesByMood({
   if (releaseYearStart || releaseYearEnd) {
     let dateFilter = ''
     if (releaseYearStart) {
-      const startTimestamp = Math.floor(new Date(releaseYearStart, 0, 1).getTime() / 1000)
+      const startTimestamp = Math.floor(new Date(clampInt(releaseYearStart, 1950, 2100, 1950), 0, 1).getTime() / 1000)
       dateFilter += `first_release_date >= ${startTimestamp}`
     }
     if (releaseYearEnd) {
-      const endTimestamp = Math.floor(new Date(releaseYearEnd, 11, 31).getTime() / 1000)
+      const endTimestamp = Math.floor(new Date(clampInt(releaseYearEnd, 1950, 2100, 2100), 11, 31).getTime() / 1000)
       if (dateFilter) dateFilter += ' & '
       dateFilter += `first_release_date <= ${endTimestamp}`
     }
@@ -503,17 +505,17 @@ async function findGamesByMood({
   if (minRating || maxRating) {
     let ratingFilter = 'total_rating_count > 0'
     if (minRating) {
-      ratingFilter += ` & total_rating >= ${minRating}`
+      ratingFilter += ` & total_rating >= ${clampInt(minRating, 0, 100, 0)}`
     }
     if (maxRating) {
-      ratingFilter += ` & total_rating <= ${maxRating}`
+      ratingFilter += ` & total_rating <= ${clampInt(maxRating, 0, 100, 100)}`
     }
     whereClause.push(`(${ratingFilter})`)
   }
 
   // Add themes filter
   if (themes && themes.length > 0) {
-    const themeIds = themes.map(t => typeof t === 'number' ? t : t.id).join(',')
+    const themeIds = toIgdbIdList(themes).join(',')
     whereClause.push(`themes = (${themeIds})`)
   }
   
@@ -525,7 +527,8 @@ async function findGamesByMood({
   console.log('Generated where clause:', where);
 
   // Build sort string
-  const sort = `${sortBy} ${sortOrder}`
+  const safe = safeSort(sortBy, sortOrder)
+  const sort = `${safe.sortBy} ${safe.sortOrder}`
   
   // Use a smaller limit for faster initial results
   const searchLimit = Math.min(limit, 15)

@@ -79,7 +79,7 @@ export async function POST(request) {
   } catch (error) {
     console.error('Error filtering games:', error)
     return Response.json(
-      { error: 'Failed to filter games', message: error.message || 'Unknown error' },
+      { error: 'Failed to filter games' },
       { status: 500 }
     )
   }

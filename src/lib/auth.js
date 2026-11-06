@@ -13,14 +13,12 @@ const prisma = new PrismaClient()
 export async function verifyCredentials(email, password) {
   try {
     const normalizedEmail = normalizeEmail(email)
-    console.log('[AUTH] Attempting to verify credentials for:', normalizedEmail)
     
     const user = await prisma.user.findUnique({
       where: { email: normalizedEmail }
     })
 
     if (!user) {
-      console.log('[AUTH] User not found:', normalizedEmail)
       return null
     }
 
@@ -28,11 +26,9 @@ export async function verifyCredentials(email, password) {
     const isValid = await bcrypt.compare(password, user.password)
     
     if (!isValid) {
-      console.log('[AUTH] Password mismatch for:', normalizedEmail)
       return null
     }
 
-    console.log('[AUTH] Credentials verified successfully for:', normalizedEmail)
     // Return user without password
     const { password: _, ...userWithoutPassword } = user
     return userWithoutPassword
