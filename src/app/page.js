@@ -1,8 +1,8 @@
 "use client"
 
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { SITE_NAME, GH_URL } from '../lib/config'
 import TurnstileWidget from '../components/TurnstileWidget'
 
@@ -13,16 +13,34 @@ export default function Home() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitStatus, setSubmitStatus] = useState(null) // 'success' or 'error'
   const [errorMessage, setErrorMessage] = useState('')
-  const [turnstileToken, setTurnstileToken] = useState('')
-  const [captchaResetKey, setCaptchaResetKey] = useState(0)
+  const [showCaptcha, setShowCaptcha] = useState(false)
 
-  const handleWaitlistSubmit = async (e) => {
-    e.preventDefault()
-    if (!turnstileToken) {
-      setSubmitStatus('error')
-      setErrorMessage('Please complete the captcha first.')
-      return
+  // Close the captcha modal with Escape
+  useEffect(() => {
+    if (!showCaptcha) return undefined
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') setShowCaptcha(false)
     }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [showCaptcha])
+
+  // Submitting the form opens the captcha; solving it sends the request
+  const handleWaitlistSubmit = (e) => {
+    e.preventDefault()
+    if (isSubmitting) return
+    setSubmitStatus(null)
+    setErrorMessage('')
+    setShowCaptcha(true)
+  }
+
+  const handleCaptchaToken = (token) => {
+    if (!token) return
+    setShowCaptcha(false)
+    submitWaitlist(token)
+  }
+
+  const submitWaitlist = async (turnstileToken) => {
     setIsSubmitting(true)
     setSubmitStatus(null)
     setErrorMessage('')
@@ -62,9 +80,6 @@ export default function Home() {
       }, 5000)
     } finally {
       setIsSubmitting(false)
-      // Tokens are single-use: always get a fresh challenge after a submit
-      setTurnstileToken('')
-      setCaptchaResetKey((k) => k + 1)
     }
   }
 
@@ -204,11 +219,6 @@ export default function Home() {
                   required
                   className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent"
                 />
-                <TurnstileWidget
-                  onToken={setTurnstileToken}
-                  resetKey={captchaResetKey}
-                  className="flex justify-center"
-                />
                 <motion.button 
                   type="submit"
                   className="btn-secondary text-lg py-3 px-8 w-full"
@@ -267,6 +277,42 @@ export default function Home() {
           </div>
         </motion.div>
       </motion.main>
+
+      <AnimatePresence>
+        {showCaptcha && (
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowCaptcha(false)}
+          >
+            <motion.div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="captcha-title"
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 w-full max-w-sm text-center"
+              initial={{ scale: 0.95, y: 10 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 10 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 id="captcha-title" className="text-lg font-bold mb-1">Quick check</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                Confirm you&apos;re human and we&apos;ll add you to the waitlist.
+              </p>
+              <TurnstileWidget onToken={handleCaptchaToken} className="flex justify-center min-h-[65px]" />
+              <button
+                type="button"
+                onClick={() => setShowCaptcha(false)}
+                className="mt-4 text-sm text-gray-500 dark:text-gray-400 hover:underline"
+              >
+                Cancel
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 } 
