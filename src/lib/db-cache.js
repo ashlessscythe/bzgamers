@@ -772,7 +772,45 @@ async function getCacheStats() {
   }
 }
 
+/**
+ * Admin overview: entity counts plus search-cache freshness.
+ */
+async function getCacheOverview() {
+  const now = new Date()
+  const [stats, expiredSearches, newestSearch, oldestGame, newestGame] = await Promise.all([
+    getCacheStats(),
+    prisma.searchCache.count({ where: { ttl: { lt: now } } }),
+    prisma.searchCache.findFirst({ orderBy: { createdAt: 'desc' }, select: { createdAt: true } }),
+    prisma.cachedGame.findFirst({ orderBy: { lastUpdated: 'asc' }, select: { lastUpdated: true } }),
+    prisma.cachedGame.findFirst({ orderBy: { lastUpdated: 'desc' }, select: { lastUpdated: true } }),
+  ])
+  return {
+    stats,
+    searches: {
+      total: stats.searches ?? 0,
+      expired: expiredSearches,
+      newestAt: newestSearch?.createdAt ?? null,
+    },
+    games: {
+      total: stats.games ?? 0,
+      oldestUpdatedAt: oldestGame?.lastUpdated ?? null,
+      newestUpdatedAt: newestGame?.lastUpdated ?? null,
+    },
+  }
+}
+
+/**
+ * Delete every cached search result (games/genres/etc. are kept).
+ * @returns {Promise<number>} number of rows deleted
+ */
+async function clearSearchCache() {
+  const { count } = await prisma.searchCache.deleteMany({})
+  return count
+}
+
 module.exports = {
+  getCacheOverview,
+  clearSearchCache,
   getCachedSearch,
   cacheSearch,
   cacheGame,

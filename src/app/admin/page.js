@@ -9,6 +9,7 @@ import UserCard from '@/components/admin/UserCard'
 import WaitlistCard from '@/components/admin/WaitlistCard'
 import AnalyticsPanel from '@/components/admin/AnalyticsPanel'
 import TwitchStatusPanel from '@/components/admin/TwitchStatusPanel'
+import CachePanel from '@/components/admin/CachePanel'
 
 export default function AdminPage() {
   const { data: session, status } = useSession()
@@ -1052,7 +1053,12 @@ export default function AdminPage() {
         )}
 
         {/* System Tab Content */}
-        {activeTab === 'system' && <TwitchStatusPanel />}
+        {activeTab === 'system' && (
+          <>
+            <TwitchStatusPanel />
+            <CachePanel />
+          </>
+        )}
 
         {/* Visitor Activity Tab Content */}
         {activeTab === 'analytics' && (

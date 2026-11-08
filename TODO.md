@@ -148,8 +148,8 @@ This document outlines the steps needed to complete the BZGamers MVP, organized 
 - [ ] Advanced caching features
   - [ ] Local image caching/downloading
   - [ ] Background data synchronization
-  - [ ] Cache warming strategies
-  - [ ] Admin dashboard for cache management
+  - [x] Cache warming strategies (admin "Warm cache" action pre-loads genres/platforms/themes)
+  - [x] Admin dashboard for cache management (Admin → System → Database cache: stats, cleanup, clear, warm)
 
 ## Security Follow-ups
 - [x] Delete dead `src/pages-backup/` (stale copies of diagnostic API routes)
