@@ -4,15 +4,21 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useSession } from 'next-auth/react'
+import { createPortal } from 'react-dom'
 
 /**
  * Mobile menu component for navigation on smaller screens
  */
 export default function MobileMenu() {
   const [isOpen, setIsOpen] = useState(false)
+  const [mounted, setMounted] = useState(false)
   const pathname = usePathname()
   const { data: session } = useSession()
   
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
   // Close the menu when route changes
   useEffect(() => {
     setIsOpen(false)
@@ -66,6 +72,13 @@ export default function MobileMenu() {
         )}
       </button>
       
+      {/*
+        Rendered in a portal: the header uses backdrop-blur, which makes it the
+        containing block for `fixed` descendants and pushed the off-screen panel
+        into the page, causing horizontal scroll.
+      */}
+      {mounted && createPortal(
+        <>
       {/* Backdrop */}
       {isOpen && (
         <div
@@ -77,8 +90,8 @@ export default function MobileMenu() {
       
       {/* Menu Panel */}
       <div
-        className={`fixed top-0 right-0 bottom-0 w-[280px] bg-white dark:bg-gray-900 shadow-2xl z-[9999] md:hidden transition-transform duration-300 ease-in-out ${
-          isOpen ? 'translate-x-0' : 'translate-x-full'
+        className={`fixed top-0 right-0 bottom-0 w-[280px] bg-white dark:bg-gray-900 shadow-2xl z-[9999] md:hidden transition-[transform,visibility] duration-300 ease-in-out ${
+          isOpen ? 'translate-x-0' : 'translate-x-full invisible'
         }`}
         style={{ 
           height: '100dvh',
@@ -120,6 +133,9 @@ export default function MobileMenu() {
           </p>
         </div>
       </div>
+        </>,
+        document.body
+      )}
     </>
   )
 }
