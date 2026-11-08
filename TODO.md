@@ -149,6 +149,23 @@ This document outlines the steps needed to complete the BZGamers MVP, organized 
   - [ ] Cache warming strategies
   - [ ] Admin dashboard for cache management
 
+## Security Follow-ups
+- [ ] Delete dead `src/pages-backup/` (stale copies of diagnostic API routes)
+- [ ] Signup user enumeration: stop returning "Email already registered" (409)
+- [ ] Add Turnstile captcha to `/api/waitlist` and `/api/auth/reset-password` (currently rate-limited only; needs frontend)
+- [ ] Strengthen password policy (min 6 chars today) and add breach/complexity check
+- [ ] Email verification before sign-in (`emailVerified` exists in schema, unused)
+- [ ] Tighten CSP: replace `unsafe-inline`/`unsafe-eval` with nonces; add HSTS header
+- [ ] Re-check admin role against the database in `/api/admin/*` (JWT role is trusted until expiry)
+- [ ] Back the rate limiter with a shared store (Redis/edge rule); current one is per-instance
+- [ ] Replace `dangerouslySetInnerHTML` in `src/app/games/page.js` (personalized summary) with JSX
+- [ ] Escape `name`/`email` in HTML email templates; sanitize admin custom email HTML
+- [ ] Share one `PrismaClient` singleton instead of one per route file
+- [ ] Fail hard (don't fall back to localhost/`VERCEL_URL`) when `NEXTAUTH_URL` is unset in production; review `trustHost: true`
+- [ ] CSRF origin check on cookie-authenticated JSON POST routes
+- [ ] CI: raise `npm audit` threshold from critical to high
+- [ ] Replace placeholder secrets in `.env.example` (e.g. `AUTH_SECRET="bruh"`) with obvious "change-me" values
+
 ## Notes
 - Remember to maintain the sleek, colorful, uplifting design throughout
 - Focus on responsive design from the beginning
