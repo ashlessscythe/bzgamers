@@ -6,6 +6,7 @@ import { useSession } from 'next-auth/react'
 import { useSearchParams } from 'next/navigation'
 import GameResults from '@/components/GameResults'
 import GoToTopButton from '@/components/GoToTopButton'
+import AccountPerksNote from '@/components/AccountPerksNote'
 import SimilarFocusPicker, { toFocusPayload } from '@/components/SimilarFocusPicker'
 import { getUserFriendlyMessage } from '@/lib/error-handler'
 import { useCookieConsent } from '@/components/CookieConsentProvider'
@@ -1017,12 +1018,13 @@ function GamesContent() {
                         }}
                         className="p-6 bg-gradient-to-br from-primary/10 to-primary/5 dark:from-primary/20 dark:to-primary/10 rounded-lg hover:bg-primary/20 dark:hover:bg-primary/30 hover:border-primary transition-all border-2 border-transparent text-left"
                       >
-                        <h3 className="text-xl font-bold mb-2">Similar Game (Beta)</h3>
+                        <h3 className="text-xl font-bold mb-2">Similar Game</h3>
                         <p className="text-gray-600 dark:text-gray-400">
                           Search for a game you like, and we&apos;ll find similar games available on the same platforms.
                         </p>
                       </button>
                     </div>
+                    <AccountPerksNote isSignedIn={authStatus === 'authenticated'} isLoading={authStatus === 'loading'} />
                   </motion.div>
                 )}
 

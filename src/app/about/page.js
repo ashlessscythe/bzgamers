@@ -66,6 +66,10 @@ export default function About() {
             We believe that gaming is more than just a hobby—it&apos;s a way to express yourself, connect with others, and experience new worlds. 
             Our mood-based game finder helps you discover games that match your current state of mind, available time, and preferences.
           </p>
+          <p className="text-lg text-gray-600 dark:text-gray-400 mb-6">
+            Browsing is open to everyone. A free account adds a few extras: save favorite games to your profile and
+            choose the platforms you play on, so your searches are filtered to games you can actually play.
+          </p>
           
           <h2 className="text-2xl font-bold mb-4">Our Vision</h2>
           <p className="text-lg text-gray-600 dark:text-gray-400 mb-6">

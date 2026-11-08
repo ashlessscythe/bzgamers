@@ -58,7 +58,7 @@ This document outlines the steps needed to complete the BZGamers MVP, organized 
   - [x] Create filter UI components with clear/apply functionality
   - [x] Integrate filters with existing API calls
   - [x] Add filter state management and persistence
-- [x] Implement "Give me a game like..." feature (Beta)
+- [x] Implement "Give me a game like..." feature
   - [x] Create game search input component
   - [x] Implement game lookup via API
   - [x] Display game's themes and genres for selection (`SimilarFocusPicker`)
