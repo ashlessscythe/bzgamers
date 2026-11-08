@@ -68,5 +68,5 @@ jobs:
       - name: Production build
         run: npm run build
 
-      - name: Audit (critical)
-        run: npm audit --audit-level=critical
+      - name: Audit (high)
+        run: npm audit --audit-level=high

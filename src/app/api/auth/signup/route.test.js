@@ -82,7 +82,7 @@ describe('POST /api/auth/signup', () => {
     expect(data.error).toMatch(/captcha/i)
   })
 
-  it('returns 409 when email is already registered', async () => {
+  it('responds like a fresh signup (no enumeration) when email already exists', async () => {
     mockFindUnique.mockResolvedValue({ id: 1, email: 'user@example.com' })
     const res = await POST(
       jsonRequest({
@@ -92,8 +92,10 @@ describe('POST /api/auth/signup', () => {
       })
     )
     const { status, data } = await parseRouteResponse(res)
-    expect(status).toBe(409)
-    expect(data.error).toMatch(/already registered/i)
+    expect(status).toBe(200)
+    expect(data.success).toBe(true)
+    expect(data.user).toBeUndefined()
+    expect(mockCreate).not.toHaveBeenCalled()
   })
 
   it('creates guest user on success', async () => {

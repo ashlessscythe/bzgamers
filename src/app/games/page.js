@@ -841,19 +841,23 @@ function GamesContent() {
 
   // Function to generate personalized summary
   const generatePersonalizedSummary = () => {
+    const plain = (text) => (
+      <span className="text-gray-700 dark:text-gray-300">{text}</span>
+    )
+    const highlight = (text) => (
+      <span className="font-semibold text-primary dark:text-blue-400">{text}</span>
+    )
+
     const parts = []
-    
-    // Add mood
+
     if (selectedMood) {
-      parts.push(`Since you're feeling <span class="font-semibold text-primary dark:text-blue-400">${selectedMood.toLowerCase()}</span>`)
+      parts.push(<>Since you&apos;re feeling {highlight(selectedMood.toLowerCase())}</>)
     }
-    
-    // Add time
+
     if (selectedTime) {
-      parts.push(`and you have <span class="font-semibold text-primary dark:text-blue-400">${selectedTime}</span> to play`)
+      parts.push(<>and you have {highlight(selectedTime)} to play</>)
     }
-    
-    // Add genre
+
     if (selectedGenre) {
       let genreName = selectedGenre
       if (genres.length > 0) {
@@ -862,50 +866,55 @@ function GamesContent() {
           genreName = genreObj.name
         }
       }
-      parts.push(`and you enjoy <span class="font-semibold text-primary dark:text-blue-400">${genreName}</span> games`)
+      parts.push(<>and you enjoy {highlight(genreName)} games</>)
     }
-    
+
     if (parts.length === 0) {
-      return '<span class="text-gray-700 dark:text-gray-300">Here are some great games for you to discover! 🎮</span>'
+      return plain('Here are some great games for you to discover! 🎮')
     }
-    
-    // Check for special combinations first
+
     if (selectedMood && selectedTime && selectedGenre) {
       const specialCombinations = {
-        'Energetic-< 30 min-Shooter': '<span class="text-gray-700 dark:text-gray-300">Perfect! A quick adrenaline rush is exactly what you need right now! 💥</span>',
-        'Relaxed-2+ hours-Adventure': '<span class="text-gray-700 dark:text-gray-300">Ah, the perfect setup for an immersive escape! Time to get lost in another world! 🌍</span>',
-        'Focused-1-2 hours-Strategy': '<span class="text-gray-700 dark:text-gray-300">Your brain is ready for some serious tactical thinking! 🧠⚡</span>',
-        'Social-30-60 min-Sport': '<span class="text-gray-700 dark:text-gray-300">Time for some friendly competition! Perfect for a quick gaming session with friends! ⚽</span>',
-        'Creative-2+ hours-Indie': '<span class="text-gray-700 dark:text-gray-300">Your imagination is calling! These creative gems will inspire you for hours! ✨</span>',
-        'Competitive-< 30 min-Fighting': '<span class="text-gray-700 dark:text-gray-300">Quick matches, intense action - your competitive spirit will love this! 👊</span>',
-        'Adventurous-1-2 hours-Role-playing (RPG)': '<span class="text-gray-700 dark:text-gray-300">Epic quests await! Time to embark on an unforgettable journey! 🗡️</span>',
-        'Nostalgic-30-60 min-Platform': '<span class="text-gray-700 dark:text-gray-300">Classic vibes for a classic mood! These games will bring back the good memories! 📼</span>'
+        'Energetic-< 30 min-Shooter': 'Perfect! A quick adrenaline rush is exactly what you need right now! 💥',
+        'Relaxed-2+ hours-Adventure': 'Ah, the perfect setup for an immersive escape! Time to get lost in another world! 🌍',
+        'Focused-1-2 hours-Strategy': 'Your brain is ready for some serious tactical thinking! 🧠⚡',
+        'Social-30-60 min-Sport': 'Time for some friendly competition! Perfect for a quick gaming session with friends! ⚽',
+        'Creative-2+ hours-Indie': 'Your imagination is calling! These creative gems will inspire you for hours! ✨',
+        'Competitive-< 30 min-Fighting': 'Quick matches, intense action - your competitive spirit will love this! 👊',
+        'Adventurous-1-2 hours-Role-playing (RPG)': 'Epic quests await! Time to embark on an unforgettable journey! 🗡️',
+        'Nostalgic-30-60 min-Platform': 'Classic vibes for a classic mood! These games will bring back the good memories! 📼'
       }
-      
+
       const combinationKey = `${selectedMood}-${selectedTime}-${selectedGenre}`
       if (specialCombinations[combinationKey]) {
-        return specialCombinations[combinationKey]
+        return plain(specialCombinations[combinationKey])
       }
     }
-    
-    // Generate different closing messages based on mood
-    let closingMessage = '<span class="text-gray-700 dark:text-gray-300">here are some perfect games for your current vibe! 🎮</span>'
-    
+
+    let closingMessage = 'here are some perfect games for your current vibe! 🎮'
+
     if (selectedMood) {
       const moodClosings = {
-        'Energetic': '<span class="text-gray-700 dark:text-gray-300">here are some exciting games to match your energy! ⚡</span>',
-        'Relaxed': '<span class="text-gray-700 dark:text-gray-300">here are some chill games to keep you in that peaceful state! 😌</span>',
-        'Focused': '<span class="text-gray-700 dark:text-gray-300">here are some engaging games to keep your mind sharp! 🧠</span>',
-        'Creative': '<span class="text-gray-700 dark:text-gray-300">here are some inspiring games to spark your imagination! ✨</span>',
-        'Social': '<span class="text-gray-700 dark:text-gray-300">here are some fun games to share with friends! 👥</span>',
-        'Competitive': '<span class="text-gray-700 dark:text-gray-300">here are some intense games to satisfy your competitive spirit! 🏆</span>',
-        'Adventurous': '<span class="text-gray-700 dark:text-gray-300">here are some epic games for your next adventure! 🗺️</span>',
-        'Nostalgic': '<span class="text-gray-700 dark:text-gray-300">here are some games that\'ll take you back to the good old days! 📼</span>'
+        'Energetic': 'here are some exciting games to match your energy! ⚡',
+        'Relaxed': 'here are some chill games to keep you in that peaceful state! 😌',
+        'Focused': 'here are some engaging games to keep your mind sharp! 🧠',
+        'Creative': 'here are some inspiring games to spark your imagination! ✨',
+        'Social': 'here are some fun games to share with friends! 👥',
+        'Competitive': 'here are some intense games to satisfy your competitive spirit! 🏆',
+        'Adventurous': 'here are some epic games for your next adventure! 🗺️',
+        'Nostalgic': 'here are some games that\'ll take you back to the good old days! 📼'
       }
       closingMessage = moodClosings[selectedMood] || closingMessage
     }
-    
-    return `${parts.join(' ')}, ${closingMessage}`
+
+    return (
+      <>
+        {parts.map((part, i) => (
+          <span key={i}>{i > 0 ? ' ' : ''}{part}</span>
+        ))}
+        , {plain(closingMessage)}
+      </>
+    )
   }
 
   return (
@@ -1398,10 +1407,9 @@ function GamesContent() {
                     </>
                   ) : (
                     <>
-                      <p 
-                        className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed"
-                        dangerouslySetInnerHTML={{ __html: generatePersonalizedSummary() }}
-                      />
+                      <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
+                        {generatePersonalizedSummary()}
+                      </p>
                       <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
                         Found <span className="font-semibold text-primary dark:text-blue-400">{originalResults.length}</span> perfect games for you!
                       </p>

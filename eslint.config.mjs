@@ -12,7 +12,6 @@ const config = [
       'src/generated/**',
       'scripts/**',
       'test_*.js',
-      'src/pages-backup/**',
       'src/lib/api-test.js',
       'src/app/api/test-igdb/**',
       'src/test/**',

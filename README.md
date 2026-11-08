@@ -169,7 +169,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Routing
 
-This project uses the **Next.js App Router** (see `src/app/`). The legacy Pages Router code is preserved in `src/pages-backup/` for reference.
+This project uses the **Next.js App Router** (see `src/app/`).
 
 ## Environment Variables
 

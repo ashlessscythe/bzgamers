@@ -36,7 +36,6 @@ export default defineConfig({
       exclude: [
         'src/**/*.{test,spec}.{js,jsx}',
         'src/generated/**',
-        'src/pages-backup/**',
         // External/integration-heavy modules — covered via integration scripts, not unit tests
         'src/lib/api.js',
         'src/lib/api-enhanced.js',

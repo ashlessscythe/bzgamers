@@ -271,6 +271,10 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'signin' }) {
           if (!result?.error) {
             onClose()
             window.location.reload()
+          } else {
+            setSuccess(false)
+            setIsLoading(false)
+            setError('We could not sign you in. If you already have an account, please sign in or reset your password.')
           }
         }, 1000)
       } else {

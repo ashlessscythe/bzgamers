@@ -85,10 +85,13 @@ export async function POST(request) {
     })
 
     if (existing) {
-      return NextResponse.json(
-        { error: 'Email already registered' },
-        { status: 409 }
-      )
+      // Respond identically to a fresh signup so callers cannot enumerate
+      // registered emails. The client's auto sign-in will fail for the
+      // existing account unless the password happens to match.
+      return NextResponse.json({
+        success: true,
+        message: 'Account created successfully'
+      })
     }
 
     // Hash password
