@@ -84,7 +84,7 @@ This document outlines the steps needed to complete the BZGamers MVP, organized 
   - [x] Cache authentication tokens
   - [x] Add cache statistics and monitoring
 
-## Milestone 5: Authentication & User Features
+## Milestone 5: Authentication & User Features ✅
 - [x] Implement authentication
   - [x] Set up NextAuth (credentials + JWT; not Neon Auth/Clerk)
   - [x] Create sign-up/login flows
@@ -112,6 +112,7 @@ This document outlines the steps needed to complete the BZGamers MVP, organized 
   - [ ] Set up production environment
   - [ ] Configure domain (bzgamers.com or similar)
   - [ ] Create deployment documentation
+    - Note for the docs: run `npx prisma migrate deploy` against the production DB before deploying a release that adds a migration (the build only runs `prisma generate`); set `NEXTAUTH_URL` (required in production) and optionally `ADMIN_ALERT_EMAIL`
   - [x] Implement analytics (optional)
 
 ## Milestone 7: Gaming Psychology & Mindfulness Features
