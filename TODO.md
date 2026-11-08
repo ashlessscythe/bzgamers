@@ -61,8 +61,8 @@ This document outlines the steps needed to complete the BZGamers MVP, organized 
 - [x] Implement "Give me a game like..." feature (Beta)
   - [x] Create game search input component
   - [x] Implement game lookup via API
-  - [ ] Display game's themes and genres for selection
-  - [ ] Add multi-select interface (limit to 4 selections)
+  - [x] Display game's themes and genres for selection (`SimilarFocusPicker`)
+  - [x] Add multi-select interface (limit to 4 selections; `focus` param on `/api/similar-games`)
   - [x] Create API endpoint for finding similar games
   - [x] Implement results display with game recommendations
   - [x] Add loading states and error handling

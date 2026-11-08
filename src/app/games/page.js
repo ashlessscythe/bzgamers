@@ -5,6 +5,7 @@ import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import GameResults from '@/components/GameResults'
 import GoToTopButton from '@/components/GoToTopButton'
+import SimilarFocusPicker, { toFocusPayload } from '@/components/SimilarFocusPicker'
 import { getUserFriendlyMessage } from '@/lib/error-handler'
 import { useCookieConsent } from '@/components/CookieConsentProvider'
 import { visitorHeaders } from '@/lib/visitor-id'
@@ -93,6 +94,7 @@ function GamesContent() {
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState([])
   const [selectedGame, setSelectedGame] = useState(null)
+  const [focusTags, setFocusTags] = useState([]) // up to 4 genres/themes of selectedGame to focus on
   const [isSearching, setIsSearching] = useState(false)
   
   // State for expanded options
@@ -210,7 +212,8 @@ function GamesContent() {
           showAllMoods: savedShowAllMoods,
           showAdvancedGenres: savedShowAdvancedGenres,
           searchMode: savedSearchMode,
-          selectedGame: savedSelectedGame
+          selectedGame: savedSelectedGame,
+          focusTags: savedFocusTags
         } = parsedState
 
         // Only restore if we have results to show
@@ -234,6 +237,7 @@ function GamesContent() {
           })
           setSearchMode(savedSearchMode || null)
           setSelectedGame(savedSelectedGame || null)
+          setFocusTags(Array.isArray(savedFocusTags) ? savedFocusTags : [])
         }
       } catch (err) {
         console.error('Error restoring saved state:', err)
@@ -260,14 +264,15 @@ function GamesContent() {
         showAllMoods,
         showAdvancedGenres,
         searchMode,
-        selectedGame
+        selectedGame,
+        focusTags
       }
       localStorage.setItem('bzgamers-search-state', JSON.stringify(stateToSave))
     } else {
       // Clear saved state if no results to show
       localStorage.removeItem('bzgamers-search-state')
     }
-  }, [preferencesAllowed, selectedMood, selectedTime, selectedGenre, results, originalResults, showResults, advancedFilters, showAllMoods, showAdvancedGenres, searchMode, selectedGame])
+  }, [preferencesAllowed, selectedMood, selectedTime, selectedGenre, results, originalResults, showResults, advancedFilters, showAllMoods, showAdvancedGenres, searchMode, selectedGame, focusTags])
 
   // Restore scroll position after loading more results
   useEffect(() => {
@@ -532,7 +537,7 @@ function GamesContent() {
           'Content-Type': 'application/json',
           ...visitorHeaders(),
         },
-        body: JSON.stringify({ gameId: selectedGame.id, gameName: selectedGame.name })
+        body: JSON.stringify({ gameId: selectedGame.id, gameName: selectedGame.name, focus: toFocusPayload(focusTags) })
       })
       
       if (!response.ok) {
@@ -596,6 +601,7 @@ function GamesContent() {
     setSearchQuery('')
     setSearchResults([])
     setSelectedGame(null)
+    setFocusTags([])
     // Clear saved state from localStorage
     localStorage.removeItem('bzgamers-search-state')
   }
@@ -631,6 +637,7 @@ function GamesContent() {
           body: JSON.stringify({ 
             gameId: selectedGame.id,
             gameName: selectedGame.name,
+            focus: toFocusPayload(focusTags),
             offset: originalResults.length 
           })
         })
@@ -1259,6 +1266,7 @@ function GamesContent() {
                                   setSearchQuery('')
                                   setSearchResults([])
                                   setSelectedGame(null)
+                                  setFocusTags([])
                                 }}
                                 className="text-primary hover:text-primary-dark transition-colors"
                               >
@@ -1272,11 +1280,21 @@ function GamesContent() {
                                 {isLoading ? 'Finding similar games...' : 'Give me a game like this'}
                               </button>
                             </div>
+                            {selectedGame && (
+                              <SimilarFocusPicker
+                                game={selectedGame}
+                                selected={focusTags}
+                                onChange={setFocusTags}
+                              />
+                            )}
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
                               {searchResults.map((game) => (
                                 <button
                                   key={game.id}
-                                  onClick={() => setSelectedGame(game)}
+                                  onClick={() => {
+                                    if (selectedGame?.id !== game.id) setFocusTags([])
+                                    setSelectedGame(game)
+                                  }}
                                   className={`p-4 rounded-lg border-2 transition-all text-left ${
                                     selectedGame?.id === game.id
                                       ? 'bg-primary/20 border-primary'
@@ -1322,6 +1340,7 @@ function GamesContent() {
                                   setSearchQuery('')
                                   setSearchResults([])
                                   setSelectedGame(null)
+                                  setFocusTags([])
                                 }}
                                 className="text-primary hover:text-primary-dark transition-colors"
                               >
@@ -1397,6 +1416,11 @@ function GamesContent() {
                           {selectedGame.platforms && selectedGame.platforms.length > 0 && (
                             <span className="text-sm text-gray-600 dark:text-gray-400 ml-2">
                               (filtered to {selectedGame.platforms.map(p => p.name).join(', ')})
+                            </span>
+                          )}
+                          {focusTags.length > 0 && (
+                            <span className="text-sm text-gray-600 dark:text-gray-400 ml-2">
+                              (focused on {focusTags.map(t => t.name).join(', ')})
                             </span>
                           )}
                         </span>

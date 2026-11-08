@@ -10,6 +10,7 @@ import { getCachedSearch, cacheSearch } from '../../../lib/db-cache'
 import { trackVisitorEventAsync } from '@/lib/analytics'
 import { toIgdbId, clampInt } from '@/lib/igdb-sanitize'
 import { rateLimit } from '@/lib/request-limiter'
+import { parseFocus, applyFocus, focusKey } from '@/lib/similar-focus'
 
 const PAGE_SIZE = 12
 const CANDIDATE_POOL = 60
@@ -156,24 +157,29 @@ export async function POST(request) {
       return Response.json({ error: 'Invalid game ID' }, { status: 400 })
     }
 
-    const cacheKey = {
-      type: 'similar_games_v3',
-      gameId,
-      offset,
+    // Focus tags need the seed game to validate, so a request with a focus
+    // checks the cache only after the seed game has been fetched.
+    const hasFocusInput = Boolean(body.focus && typeof body.focus === 'object')
+    let focus = null
+    let cacheKey = { type: 'similar_games_v3', gameId, offset }
+
+    async function respondFromCache(key) {
+      if (offset !== 0) return null
+      const cached = await getCachedSearch(key)
+      if (!cached) return null
+      trackVisitorEventAsync(request, {
+        eventType: 'similar_search',
+        gameId,
+        gameName: gameName || null,
+        resultCount: Array.isArray(cached) ? cached.length : null,
+        metadata: { offset, cached: true, focusTags: focus ? focus.genres.length + focus.themes.length : 0 },
+      })
+      return Response.json(cached)
     }
 
-    if (offset === 0) {
-      const cached = await getCachedSearch(cacheKey)
-      if (cached) {
-        trackVisitorEventAsync(request, {
-          eventType: 'similar_search',
-          gameId,
-          gameName: gameName || null,
-          resultCount: Array.isArray(cached) ? cached.length : null,
-          metadata: { offset, cached: true },
-        })
-        return Response.json(cached)
-      }
+    if (!hasFocusInput) {
+      const hit = await respondFromCache(cacheKey)
+      if (hit) return hit
     }
 
     const baseGames = await fetchGames({
@@ -189,7 +195,17 @@ export async function POST(request) {
     }
 
     const baseGame = baseGames[0]
-    const ranked = await buildRankedSimilarGames(baseGame, gameId)
+
+    if (hasFocusInput) {
+      focus = parseFocus(body.focus, baseGame)
+      cacheKey = focus
+        ? { type: 'similar_games_v4', gameId, offset, focus: focusKey(focus) }
+        : cacheKey
+      const hit = await respondFromCache(cacheKey)
+      if (hit) return hit
+    }
+
+    const ranked = await buildRankedSimilarGames(applyFocus(baseGame, focus), gameId)
     const page = ranked
       .slice(offset, offset + PAGE_SIZE)
       .map((entry) => entry.game)
@@ -203,7 +219,7 @@ export async function POST(request) {
       gameId,
       gameName: gameName || baseGame.name || null,
       resultCount: Array.isArray(page) ? page.length : null,
-      metadata: { offset, cached: false },
+      metadata: { offset, cached: false, focusTags: focus ? focus.genres.length + focus.themes.length : 0 },
     })
 
     return Response.json(page)
