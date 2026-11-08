@@ -498,7 +498,8 @@ function GamesContent() {
         return aValue < bValue ? 1 : -1 // Descending order (newest first)
       })
       
-      setResults(sortedResults)
+      // Honour filters already set (e.g. saved platform preferences)
+      setResults(filterGames(sortedResults, advancedFilters))
       setOriginalResults(sortedResults)
       setShowResults(true)
     } catch (err) {
@@ -588,7 +589,7 @@ function GamesContent() {
       }
       
       // Keep API similarity ranking (do not re-sort by release date)
-      setResults(similarGames)
+      setResults(filterGames(similarGames, advancedFilters))
       setOriginalResults(similarGames)
       setShowResults(true)
     } catch (err) {
@@ -1488,6 +1489,34 @@ function GamesContent() {
       <GoToTopButton />
     </div>
   )
+}
+
+// Apply the platform / year / rating filters (no sorting) to a list of games.
+function filterGames(games, filters) {
+  return games.filter((game) => {
+    if (filters.platforms.length > 0) {
+      const gamePlatforms = game.platforms || []
+      const hasMatchingPlatform = filters.platforms.some((filterPlatform) =>
+        gamePlatforms.some((gamePlatform) => gamePlatform.id === (filterPlatform.id || filterPlatform))
+      )
+      if (!hasMatchingPlatform) return false
+    }
+    if (filters.releaseYearStart || filters.releaseYearEnd) {
+      const gameYear = game.first_release_date ? new Date(game.first_release_date * 1000).getFullYear() : null
+      if (gameYear) {
+        if (filters.releaseYearStart && gameYear < parseInt(filters.releaseYearStart)) return false
+        if (filters.releaseYearEnd && gameYear > parseInt(filters.releaseYearEnd)) return false
+      }
+    }
+    if (filters.minRating || filters.maxRating) {
+      const gameRating = game.total_rating
+      if (gameRating) {
+        if (filters.minRating && gameRating < parseFloat(filters.minRating)) return false
+        if (filters.maxRating && gameRating > parseFloat(filters.maxRating)) return false
+      }
+    }
+    return true
+  })
 }
 
 export default function Games() {
