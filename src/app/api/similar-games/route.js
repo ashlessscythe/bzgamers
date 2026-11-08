@@ -138,7 +138,7 @@ async function buildRankedSimilarGames(baseGame, gameId) {
 
 export async function POST(request) {
   try {
-    const limited = rateLimit(request, 'similar-games', { limit: 60, windowMs: 60_000 })
+    const limited = await rateLimit(request, 'similar-games', { limit: 60, windowMs: 60_000 })
     if (limited) return limited
 
     const body = await request.json()

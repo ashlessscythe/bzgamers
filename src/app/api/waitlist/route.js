@@ -13,7 +13,7 @@ import { verifyTurnstile } from '@/lib/turnstile'
  */
 export async function POST(request) {
   try {
-    const limited = rateLimit(request, 'waitlist', { limit: 5, windowMs: 3600000 })
+    const limited = await rateLimit(request, 'waitlist', { limit: 5, windowMs: 3600000 })
     if (limited) return limited
 
     const { email, turnstileToken } = await request.json()

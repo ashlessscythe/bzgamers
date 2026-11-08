@@ -162,7 +162,7 @@ This document outlines the steps needed to complete the BZGamers MVP, organized 
 - [x] Add HSTS header
 - [ ] Tighten CSP: replace `unsafe-inline`/`unsafe-eval` with nonces (needs per-request nonce via proxy and dynamic rendering)
 - [x] Re-check admin role against the database in `/api/admin/*` (JWT role is trusted until expiry)
-- [ ] Back the rate limiter with a shared store (Redis/edge rule); current one is per-instance
+- [x] Back the rate limiter with a shared store: optional Upstash Redis (`UPSTASH_REDIS_REST_URL`/`_TOKEN`), falls back to per-instance memory
 - [x] Replace `dangerouslySetInnerHTML` in `src/app/games/page.js` (personalized summary) with JSX
 - [x] Escape `name`/`email` in HTML email templates; sanitize admin custom email HTML
 - [x] Share one `PrismaClient` singleton instead of one per route file

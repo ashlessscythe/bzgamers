@@ -24,6 +24,7 @@ platforms) must run `npx prisma migrate deploy` themselves as a release step.
 | `NEXT_TURNSTILE_SECRET_KEY`, `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | yes | Captcha for signup / waitlist / forgot-password |
 | `RESEND_API_KEY`, `RESEND_FROM_EMAIL` | yes | Transactional email |
 | `ADMIN_ALERT_EMAIL` | optional | Receives (max hourly) Twitch/IGDB token failure alerts |
+| `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | optional | Shared rate-limit counters across instances (recommended on serverless). Falls back to in-memory if unset or unreachable |
 | `PWNED_PASSWORD_CHECK` | optional | Set to `off` to disable the HaveIBeenPwned breach check at signup/reset |
 
 ## Auth host trust

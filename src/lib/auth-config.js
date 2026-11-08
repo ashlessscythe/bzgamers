@@ -12,7 +12,7 @@ export const authOptions = {
         password: { label: 'Password', type: 'password' }
       },
       async authorize(credentials, request) {
-        if (request && rateLimit(request, 'login', { limit: 10, windowMs: 15 * 60_000 })) {
+        if (request && await rateLimit(request, 'login', { limit: 10, windowMs: 15 * 60_000 })) {
           return null
         }
         if (!credentials?.email || !credentials?.password) {

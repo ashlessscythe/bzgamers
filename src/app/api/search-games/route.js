@@ -12,7 +12,7 @@ import { trackVisitorEventAsync } from '@/lib/analytics'
 
 export async function POST(request) {
   try {
-    const limited = rateLimit(request, 'search-games', { limit: 60, windowMs: 60000 })
+    const limited = await rateLimit(request, 'search-games', { limit: 60, windowMs: 60000 })
     if (limited) return limited
 
     const body = await request.json()

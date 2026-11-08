@@ -38,7 +38,7 @@ export async function GET() {
  */
 export async function PUT(request) {
   try {
-    const limited = rateLimit(request, 'preferences', { limit: 30, windowMs: 60_000 })
+    const limited = await rateLimit(request, 'preferences', { limit: 30, windowMs: 60_000 })
     if (limited) return limited
 
     const userId = await getUserId()

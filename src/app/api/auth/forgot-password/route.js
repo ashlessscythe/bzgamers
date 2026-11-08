@@ -15,7 +15,7 @@ import { isValidEmail, normalizeEmail } from '@/lib/validation'
  */
 export async function POST(request) {
   try {
-    const limited = rateLimit(request, 'forgot-password', { limit: 5, windowMs: 3600000 })
+    const limited = await rateLimit(request, 'forgot-password', { limit: 5, windowMs: 3600000 })
     if (limited) return limited
 
     let body

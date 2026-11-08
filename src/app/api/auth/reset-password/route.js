@@ -12,7 +12,7 @@ import { isPasswordBreached, BREACHED_PASSWORD_ERROR } from '@/lib/pwned-passwor
  */
 export async function POST(request) {
   try {
-    const limited = rateLimit(request, 'reset-password', { limit: 10, windowMs: 3600000 })
+    const limited = await rateLimit(request, 'reset-password', { limit: 10, windowMs: 3600000 })
     if (limited) return limited
 
     let body

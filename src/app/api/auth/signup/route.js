@@ -12,7 +12,7 @@ import { isPasswordBreached, BREACHED_PASSWORD_ERROR } from '@/lib/pwned-passwor
  */
 export async function POST(request) {
   try {
-    const limited = rateLimit(request, 'signup', { limit: 5, windowMs: 3600000 })
+    const limited = await rateLimit(request, 'signup', { limit: 5, windowMs: 3600000 })
     if (limited) return limited
 
     const { email, password, name, turnstileToken } = await request.json()
