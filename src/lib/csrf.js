@@ -23,6 +23,13 @@ function hostOf(value) {
 export function isCrossSiteWrite(request, extraHosts = []) {
   if (SAFE_METHODS.has(request.method)) return false
 
+  // Browsers attach Sec-Fetch-Site to every request and it cannot be forged by
+  // page scripts. It is reliable even behind proxies/CDNs that rewrite Host.
+  const fetchSite = request.headers.get('sec-fetch-site')
+  if (fetchSite === 'same-origin' || fetchSite === 'none') return false
+  if (fetchSite === 'cross-site' || fetchSite === 'same-site') return true
+
+  // Fallback for clients without Sec-Fetch-Site: compare Origin/Referer.
   const source = request.headers.get('origin') ?? request.headers.get('referer')
   if (!source) return false
   if (source === 'null') return true

@@ -20,7 +20,7 @@ export async function proxy(request) {
         return null
       }
     })()
-    if (isCrossSiteWrite(request, [configuredHost])) {
+    if (isCrossSiteWrite(request, [configuredHost, request.nextUrl.host])) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
   }

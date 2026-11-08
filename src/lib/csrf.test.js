@@ -33,6 +33,13 @@ describe('isCrossSiteWrite', () => {
     expect(isCrossSiteWrite(req('POST', { origin: 'https://bzgamers.com', host: 'internal:3000', 'x-forwarded-host': 'bzgamers.com' }))).toBe(false)
   })
 
+  it('trusts Sec-Fetch-Site over host comparison', () => {
+    // proxy rewrote Host, but the browser says it is same-origin
+    expect(isCrossSiteWrite(req('POST', { 'sec-fetch-site': 'same-origin', origin: 'https://bzgamers.com', host: 'internal:3000' }))).toBe(false)
+    expect(isCrossSiteWrite(req('POST', { 'sec-fetch-site': 'cross-site', origin: 'https://bzgamers.com', host: 'bzgamers.com' }))).toBe(true)
+    expect(isCrossSiteWrite(req('POST', { 'sec-fetch-site': 'same-site', host: 'bzgamers.com' }))).toBe(true)
+  })
+
   it('rejects a malformed Origin', () => {
     expect(isCrossSiteWrite(req('POST', { origin: 'not a url', host: 'bzgamers.com' }))).toBe(true)
   })
