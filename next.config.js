@@ -1,3 +1,5 @@
+const isProd = process.env.NODE_ENV === 'production'
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -38,15 +40,19 @@ const nextConfig = {
               "form-action 'self'",
               // Object/embed: Block plugins
               "object-src 'none'",
-              // Upgrade insecure requests
-              "upgrade-insecure-requests",
+              // Upgrade insecure requests (production only: it breaks asset
+              // loading on the plain-HTTP dev server in Safari / LAN access)
+              ...(isProd ? ["upgrade-insecure-requests"] : []),
             ].join('; '),
           },
           // Additional security headers
-          {
-            key: 'Strict-Transport-Security',
-            value: 'max-age=63072000; includeSubDomains',
-          },
+          // HSTS only makes sense over HTTPS, so only send it in production
+          ...(isProd
+            ? [{
+                key: 'Strict-Transport-Security',
+                value: 'max-age=63072000; includeSubDomains',
+              }]
+            : []),
           {
             key: 'X-Content-Type-Options',
             value: 'nosniff',
