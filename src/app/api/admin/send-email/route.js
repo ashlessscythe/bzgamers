@@ -1,10 +1,9 @@
 import { NextResponse } from 'next/server'
-import { auth } from '@/lib/auth-config'
-import { PrismaClient } from '@/generated/prisma'
-import { getWaitlistWelcomeEmail } from '@/lib/email-templates'
+import { requireAdmin } from '@/lib/require-admin'
+import { prisma } from '@/lib/prisma'
+import { getWaitlistWelcomeEmail, sanitizeEmailHtml } from '@/lib/email-templates'
 import { getResend } from '@/lib/resend'
 
-const prisma = new PrismaClient()
 
 /**
  * POST /api/admin/send-email
@@ -12,9 +11,9 @@ const prisma = new PrismaClient()
  */
 export async function POST(request) {
   try {
-    const session = await auth()
+    const session = await requireAdmin()
     
-    if (!session || session.user?.role !== 'ADMIN') {
+    if (!session) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -77,7 +76,7 @@ export async function POST(request) {
         // Use template if requested, otherwise use custom message
         const finalMessage = useTemplate && !message
           ? getWaitlistWelcomeEmail(emailData.email)
-          : emailMessage.replace(/\n/g, '<br>')
+          : sanitizeEmailHtml(emailMessage.replace(/\n/g, '<br>'))
         
         const { data, error } = await getResend().emails.send({
           from: fromEmail,

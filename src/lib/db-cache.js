@@ -8,7 +8,10 @@
 const { PrismaClient } = require('../generated/prisma')
 const crypto = require('crypto')
 
-const prisma = new PrismaClient()
+// Share the same globalThis-cached client as src/lib/prisma.js
+const PRISMA_KEY = '__bzgamersPrisma'
+if (!globalThis[PRISMA_KEY]) globalThis[PRISMA_KEY] = new PrismaClient()
+const prisma = globalThis[PRISMA_KEY]
 
 // Cache TTLs (in milliseconds)
 const CACHE_TTL = {

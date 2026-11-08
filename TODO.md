@@ -156,12 +156,13 @@ This document outlines the steps needed to complete the BZGamers MVP, organized 
 - [ ] Strengthen password policy (min 6 chars today) and add breach/complexity check
 - [ ] Email verification before sign-in (`emailVerified` exists in schema, unused)
 - [ ] Tighten CSP: replace `unsafe-inline`/`unsafe-eval` with nonces; add HSTS header
-- [ ] Re-check admin role against the database in `/api/admin/*` (JWT role is trusted until expiry)
+- [x] Re-check admin role against the database in `/api/admin/*` (JWT role is trusted until expiry)
 - [ ] Back the rate limiter with a shared store (Redis/edge rule); current one is per-instance
 - [x] Replace `dangerouslySetInnerHTML` in `src/app/games/page.js` (personalized summary) with JSX
-- [ ] Escape `name`/`email` in HTML email templates; sanitize admin custom email HTML
-- [ ] Share one `PrismaClient` singleton instead of one per route file
-- [ ] Fail hard (don't fall back to localhost/`VERCEL_URL`) when `NEXTAUTH_URL` is unset in production; review `trustHost: true`
+- [x] Escape `name`/`email` in HTML email templates; sanitize admin custom email HTML
+- [x] Share one `PrismaClient` singleton instead of one per route file
+- [x] Fail hard (don't fall back to localhost/`VERCEL_URL`) when `NEXTAUTH_URL` is unset in production (password-reset links)
+- [ ] Review `trustHost: true` in `src/lib/auth-config.js` (left as-is; Auth.js trusts the host automatically on Vercel)
 - [ ] CSRF origin check on cookie-authenticated JSON POST routes
 - [x] CI: raise `npm audit` threshold from critical to high
 - [x] Replace placeholder secrets in `.env.example` (e.g. `AUTH_SECRET="bruh"`) with obvious "change-me" values

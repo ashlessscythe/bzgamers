@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server'
-import { auth } from '@/lib/auth-config'
-import { PrismaClient } from '@/generated/prisma'
+import { requireAdmin } from '@/lib/require-admin'
+import { prisma } from '@/lib/prisma'
 
-const prisma = new PrismaClient()
 
 /**
  * GET /api/admin/feedback
@@ -10,9 +9,9 @@ const prisma = new PrismaClient()
  */
 export async function GET(request) {
   try {
-    const session = await auth()
+    const session = await requireAdmin()
     
-    if (!session || session.user?.role !== 'ADMIN') {
+    if (!session) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -73,9 +72,9 @@ export async function GET(request) {
  */
 export async function DELETE(request) {
   try {
-    const session = await auth()
+    const session = await requireAdmin()
     
-    if (!session || session.user?.role !== 'ADMIN') {
+    if (!session) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }

@@ -1,11 +1,10 @@
 import { NextResponse } from 'next/server'
-import { PrismaClient } from '../../../generated/prisma'
+import { prisma } from '@/lib/prisma'
 import { getWaitlistAutoWelcomeEmail } from '../../../lib/email-templates'
 import { getResend } from '../../../lib/resend'
 import { rateLimit } from '../../../lib/request-limiter'
 import { isValidEmail, normalizeEmail } from '../../../lib/validation'
 
-const prisma = new PrismaClient()
 
 /**
  * POST /api/waitlist

@@ -1,8 +1,7 @@
-import { PrismaClient } from '../generated/prisma'
+import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
 import { normalizeEmail } from './validation'
 
-const prisma = new PrismaClient()
 
 /**
  * Verify user credentials

@@ -1,8 +1,7 @@
 import { createHash } from 'crypto'
-import { PrismaClient } from '@/generated/prisma'
+import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth-config'
 
-const prisma = new PrismaClient()
 
 const VISITOR_HEADER = 'x-visitor-id'
 

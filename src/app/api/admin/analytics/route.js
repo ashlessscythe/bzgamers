@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server'
-import { PrismaClient } from '@/generated/prisma'
-import { auth } from '@/lib/auth-config'
+import { prisma } from '@/lib/prisma'
+import { requireAdmin } from '@/lib/require-admin'
 
-const prisma = new PrismaClient()
 
 function groupCount(rows, keyFn, limit = 20) {
   const counts = new Map()
@@ -23,9 +22,9 @@ function groupCount(rows, keyFn, limit = 20) {
  */
 export async function GET(request) {
   try {
-    const session = await auth()
+    const session = await requireAdmin()
 
-    if (!session || session.user?.role !== 'ADMIN') {
+    if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 

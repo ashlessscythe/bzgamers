@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server'
 import { rateLimit } from '@/lib/request-limiter'
-import { PrismaClient } from '@/generated/prisma'
+import { prisma } from '@/lib/prisma'
+import { getAuthBaseUrl } from '@/lib/site-url'
 import { getPasswordResetEmail } from '@/lib/email-templates'
 import { getResend } from '@/lib/resend'
 import crypto from 'crypto'
 import { isValidEmail, normalizeEmail } from '@/lib/validation'
 
-const prisma = new PrismaClient()
 
 /**
  * POST /api/auth/forgot-password
@@ -115,14 +115,7 @@ export async function POST(request) {
       })
 
       // Generate reset URL
-      let baseUrl = process.env.NEXTAUTH_URL
-      if (!baseUrl) {
-        if (process.env.VERCEL_URL) {
-          baseUrl = `https://${process.env.VERCEL_URL}`
-        } else {
-          baseUrl = 'http://localhost:3000'
-        }
-      }
+      const baseUrl = getAuthBaseUrl()
       const resetUrl = `${baseUrl}/auth/reset-password?token=${token}`
 
       // Send email

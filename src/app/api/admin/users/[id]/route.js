@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server'
-import { auth } from '@/lib/auth-config'
-import { PrismaClient } from '@/generated/prisma'
+import { requireAdmin } from '@/lib/require-admin'
+import { prisma } from '@/lib/prisma'
 
-const prisma = new PrismaClient()
 
 /**
  * PATCH /api/admin/users/[id]
@@ -10,9 +9,9 @@ const prisma = new PrismaClient()
  */
 export async function PATCH(request, { params }) {
   try {
-    const session = await auth()
+    const session = await requireAdmin()
     
-    if (!session || session.user?.role !== 'ADMIN') {
+    if (!session) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }

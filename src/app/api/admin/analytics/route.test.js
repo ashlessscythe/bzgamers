@@ -6,15 +6,18 @@ const {
   mockFindMany,
   mockGroupBy,
   mockAuth,
+  mockUserFindUnique,
 } = vi.hoisted(() => ({
   mockFindMany: vi.fn(),
   mockGroupBy: vi.fn(),
   mockAuth: vi.fn(),
+  mockUserFindUnique: vi.fn(),
 }))
 
 vi.mock('@/generated/prisma', () => ({
   PrismaClient: class MockPrismaClient {
     constructor() {
+      this.user = { findUnique: mockUserFindUnique }
       this.visitorEvent = {
         findMany: mockFindMany,
         groupBy: mockGroupBy,
@@ -36,6 +39,16 @@ function getRequest(url = 'http://localhost/api/admin/analytics') {
 describe('GET /api/admin/analytics', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockUserFindUnique.mockResolvedValue({ role: 'ADMIN' })
+  })
+
+  it('returns 401 when the JWT says ADMIN but the database role was revoked', async () => {
+    mockAuth.mockResolvedValue({ user: { role: 'ADMIN', id: '1' } })
+    mockUserFindUnique.mockResolvedValue({ role: 'GUEST' })
+    const res = await GET(getRequest())
+    const { status } = await parseRouteResponse(res)
+    expect(status).toBe(401)
+    expect(mockFindMany).not.toHaveBeenCalled()
   })
 
   it('returns 401 for non-admins', async () => {

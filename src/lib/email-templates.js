@@ -2,6 +2,44 @@
  * Email templates for waitlist notifications
  */
 
+import sanitizeHtml from 'sanitize-html'
+
+/**
+ * Escape a value for safe interpolation into HTML text or attribute values.
+ * @param {unknown} value
+ * @returns {string}
+ */
+export function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
+/**
+ * Sanitize admin-authored HTML for outgoing mail: keeps basic formatting,
+ * links and images; strips scripts, event handlers, styles-in-tags and
+ * non-http(s)/mailto URLs.
+ * @param {string} html
+ * @returns {string}
+ */
+export function sanitizeEmailHtml(html) {
+  return sanitizeHtml(String(html ?? ''), {
+    allowedTags: [
+      'p', 'br', 'b', 'strong', 'i', 'em', 'u', 'a', 'ul', 'ol', 'li',
+      'h1', 'h2', 'h3', 'h4', 'blockquote', 'hr', 'span', 'div', 'img',
+    ],
+    allowedAttributes: {
+      a: ['href', 'title'],
+      img: ['src', 'alt', 'width', 'height'],
+    },
+    allowedSchemes: ['http', 'https', 'mailto'],
+    allowedSchemesByTag: { img: ['http', 'https'] },
+  })
+}
+
 /**
  * Default welcome email template for waitlist users
  * @param {string} email - User email
@@ -69,7 +107,7 @@ export function getWaitlistWelcomeEmail(_email) {
  * @returns {string} - HTML email content
  */
 export function getWaitlistAutoWelcomeEmail(email, name = null) {
-  const greeting = name ? `Hi ${name}!` : 'Hi there!'
+  const greeting = name ? `Hi ${escapeHtml(name)}!` : 'Hi there!'
   
   return `
     <!DOCTYPE html>
@@ -94,7 +132,7 @@ export function getWaitlistAutoWelcomeEmail(email, name = null) {
         </p>
         
         <p style="font-size: 16px; margin-bottom: 20px;">
-          You've signed up with: <strong>${email}</strong>
+          You've signed up with: <strong>${escapeHtml(email)}</strong>
         </p>
         
         <p style="font-size: 16px; margin-bottom: 20px;">
@@ -201,7 +239,7 @@ export function getFeatureLaunchEmail(_email) {
  * @returns {string} - HTML email content
  */
 export function getPasswordResetEmail(email, resetUrl, name = null) {
-  const greeting = name ? `Hi ${name},` : 'Hi there,'
+  const greeting = name ? `Hi ${escapeHtml(name)},` : 'Hi there,'
   
   return `
     <!DOCTYPE html>
@@ -222,7 +260,7 @@ export function getPasswordResetEmail(email, resetUrl, name = null) {
         </p>
         
         <p style="font-size: 16px; margin-bottom: 20px;">
-          We received a request to reset your password for your BZGamers account (${email}).
+          We received a request to reset your password for your BZGamers account (${escapeHtml(email)}).
         </p>
         
         <p style="font-size: 16px; margin-bottom: 20px;">
@@ -230,7 +268,7 @@ export function getPasswordResetEmail(email, resetUrl, name = null) {
         </p>
         
         <div style="text-align: center; margin: 30px 0;">
-          <a href="${resetUrl}" style="background: #667eea; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
+          <a href="${escapeHtml(resetUrl)}" style="background: #667eea; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
             Reset Password
           </a>
         </div>
@@ -239,7 +277,7 @@ export function getPasswordResetEmail(email, resetUrl, name = null) {
           Or copy and paste this link into your browser:
         </p>
         <p style="font-size: 12px; color: #667eea; word-break: break-all; background: white; padding: 10px; border-radius: 4px; margin-bottom: 20px;">
-          ${resetUrl}
+          ${escapeHtml(resetUrl)}
         </p>
         
         <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; border-radius: 4px;">

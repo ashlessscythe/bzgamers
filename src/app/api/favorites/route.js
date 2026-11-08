@@ -1,10 +1,9 @@
 import { NextResponse } from 'next/server'
-import { PrismaClient } from '@/generated/prisma'
+import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth-config'
 import { enrichFavorites } from '@/lib/favorite-enrichment'
 import { trackVisitorEventAsync } from '@/lib/analytics'
 
-const prisma = new PrismaClient()
 
 /**
  * GET /api/favorites

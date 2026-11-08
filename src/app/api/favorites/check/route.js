@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server'
-import { PrismaClient } from '@/generated/prisma'
+import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth-config'
 
-const prisma = new PrismaClient()
 
 /**
  * POST /api/favorites/check

@@ -1,9 +1,8 @@
 import { NextResponse } from 'next/server'
 import { rateLimit } from '@/lib/request-limiter'
-import { PrismaClient } from '@/generated/prisma'
+import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
 
-const prisma = new PrismaClient()
 
 /**
  * POST /api/auth/reset-password

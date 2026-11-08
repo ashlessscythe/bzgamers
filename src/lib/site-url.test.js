@@ -1,6 +1,6 @@
 // @vitest-environment node
-import { describe, it, expect, afterEach } from 'vitest'
-import { getSiteUrl, getGameShareUrl } from './site-url'
+import { describe, it, expect, afterEach, vi } from 'vitest'
+import { getSiteUrl, getGameShareUrl, getAuthBaseUrl } from './site-url'
 
 describe('site-url', () => {
   const original = process.env.NEXT_PUBLIC_SITE_URL
@@ -26,5 +26,31 @@ describe('site-url', () => {
   it('builds game share URLs from the site origin', () => {
     process.env.NEXT_PUBLIC_SITE_URL = 'https://example.com'
     expect(getGameShareUrl(1942)).toBe('https://example.com/games/1942')
+  })
+})
+
+describe('getAuthBaseUrl', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+
+  it('uses NEXTAUTH_URL when set', () => {
+    vi.stubEnv('NEXTAUTH_URL', 'https://bzgamers.com/')
+    vi.stubEnv('NODE_ENV', 'production')
+    expect(getAuthBaseUrl()).toBe('https://bzgamers.com')
+  })
+
+  it('throws in production when NEXTAUTH_URL is unset, even with VERCEL_URL', () => {
+    vi.stubEnv('NEXTAUTH_URL', '')
+    vi.stubEnv('VERCEL_URL', 'preview.vercel.app')
+    vi.stubEnv('NODE_ENV', 'production')
+    expect(() => getAuthBaseUrl()).toThrow(/NEXTAUTH_URL/)
+  })
+
+  it('falls back to localhost outside production', () => {
+    vi.stubEnv('NEXTAUTH_URL', '')
+    vi.stubEnv('VERCEL_URL', '')
+    vi.stubEnv('NODE_ENV', 'development')
+    expect(getAuthBaseUrl()).toBe('http://localhost:3000')
   })
 })

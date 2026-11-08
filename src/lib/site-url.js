@@ -12,3 +12,18 @@ export function getSiteUrl() {
 export function getGameShareUrl(gameId) {
   return `${getSiteUrl()}/games/${gameId}`
 }
+
+/**
+ * Base URL used for links in transactional email (e.g. password reset).
+ * In production NEXTAUTH_URL must be set; we never guess from VERCEL_URL or
+ * fall back to localhost there, since a wrong host would leak reset tokens.
+ */
+export function getAuthBaseUrl() {
+  const configured = process.env.NEXTAUTH_URL?.replace(/\/$/, '')
+  if (configured) return configured
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('NEXTAUTH_URL must be set in production')
+  }
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`
+  return 'http://localhost:3000'
+}

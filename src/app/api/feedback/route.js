@@ -1,10 +1,9 @@
 import { NextResponse } from 'next/server'
 import { rateLimit } from '@/lib/request-limiter'
-import { PrismaClient } from '@/generated/prisma'
+import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth-config'
 import { isValidEmail, normalizeEmail } from '@/lib/validation'
 
-const prisma = new PrismaClient()
 
 /**
  * POST /api/feedback

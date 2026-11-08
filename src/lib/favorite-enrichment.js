@@ -1,8 +1,7 @@
-import { PrismaClient } from '@/generated/prisma'
+import { prisma } from '@/lib/prisma'
 import { fetchGameById } from '@/lib/api'
 import { isStaleGameData, normalizeGame } from '@/lib/game-utils'
 
-const prisma = new PrismaClient()
 
 /**
  * Refresh legacy/incomplete favorite snapshots from IGDB and persist when possible.
