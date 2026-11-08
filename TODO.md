@@ -99,15 +99,16 @@ This document outlines the steps needed to complete the BZGamers MVP, organized 
 
 ## Milestone 6: Polish & Launch Preparation
 - [ ] Enhance UI with animations
-  - [ ] Add page transitions
+  - [x] Add page transitions (`src/app/template.js` CSS fade/slide)
   - [x] Implement micro-interactions
-  - [ ] Optimize animation performance
+  - [x] Optimize animation performance (transform/opacity only; `prefers-reduced-motion` honored)
 - [x] Perform testing
   - [x] Unit/API Vitest suite with coverage gates in CI
   - [ ] Cross-browser testing
   - [ ] Mobile responsiveness testing
   - [ ] Performance optimization
   - [ ] Accessibility audit
+    - Done so far: skip link, `main` landmark, global `:focus-visible` ring, mobile menu `aria-expanded`/`aria-controls`, reduced-motion CSS. Still needs a manual screen-reader/axe pass and colour-contrast check
 - [ ] Prepare for deployment
   - [ ] Set up production environment
   - [ ] Configure domain (bzgamers.com or similar)

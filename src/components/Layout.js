@@ -35,6 +35,12 @@ export default function Layout({ children }) {
 
   return (
     <div className="min-h-screen flex flex-col bg-white dark:bg-gray-900 transition-colors">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[10002] focus:px-4 focus:py-2 focus:rounded-md focus:bg-primary focus:text-white"
+      >
+        Skip to main content
+      </a>
       <header className="sticky top-0 z-10 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-800">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <Link href="/" className="text-2xl font-bold text-primary hover:text-primary-dark transition-colors">
@@ -142,7 +148,7 @@ export default function Layout({ children }) {
         </div>
       </header>
       
-      <main className="flex-grow container mx-auto px-4 py-8">
+      <main id="main-content" tabIndex={-1} className="flex-grow focus:outline-none container mx-auto px-4 py-8">
         {children}
       </main>
       

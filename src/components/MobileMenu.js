@@ -60,6 +60,8 @@ export default function MobileMenu() {
         className="md:hidden flex items-center justify-center p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors relative z-[10001]" 
         onClick={() => setIsOpen(!isOpen)}
         aria-label="Toggle menu"
+        aria-expanded={isOpen}
+        aria-controls="mobile-menu-panel"
       >
         {isOpen ? (
           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-700 dark:text-gray-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -90,6 +92,8 @@ export default function MobileMenu() {
       
       {/* Menu Panel */}
       <div
+        id="mobile-menu-panel"
+        aria-hidden={!isOpen}
         className={`fixed top-0 right-0 bottom-0 w-[280px] bg-white dark:bg-gray-900 shadow-2xl z-[9999] md:hidden transition-[transform,visibility] duration-300 ease-in-out ${
           isOpen ? 'translate-x-0' : 'translate-x-full invisible'
         }`}
