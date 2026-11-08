@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { useState } from 'react'
 import { SITE_NAME, GH_URL } from '../lib/config'
+import TurnstileWidget from '../components/TurnstileWidget'
 
 const MotionLink = motion(Link)
 
@@ -12,9 +13,16 @@ export default function Home() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitStatus, setSubmitStatus] = useState(null) // 'success' or 'error'
   const [errorMessage, setErrorMessage] = useState('')
+  const [turnstileToken, setTurnstileToken] = useState('')
+  const [captchaResetKey, setCaptchaResetKey] = useState(0)
 
   const handleWaitlistSubmit = async (e) => {
     e.preventDefault()
+    if (!turnstileToken) {
+      setSubmitStatus('error')
+      setErrorMessage('Please complete the captcha first.')
+      return
+    }
     setIsSubmitting(true)
     setSubmitStatus(null)
     setErrorMessage('')
@@ -23,7 +31,7 @@ export default function Home() {
       const response = await fetch('/api/waitlist', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email })
+        body: JSON.stringify({ email, turnstileToken })
       })
 
       const data = await response.json()
@@ -54,6 +62,9 @@ export default function Home() {
       }, 5000)
     } finally {
       setIsSubmitting(false)
+      // Tokens are single-use: always get a fresh challenge after a submit
+      setTurnstileToken('')
+      setCaptchaResetKey((k) => k + 1)
     }
   }
 
@@ -192,6 +203,11 @@ export default function Home() {
                   placeholder="Enter your email"
                   required
                   className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent"
+                />
+                <TurnstileWidget
+                  onToken={setTurnstileToken}
+                  resetKey={captchaResetKey}
+                  className="flex justify-center"
                 />
                 <motion.button 
                   type="submit"

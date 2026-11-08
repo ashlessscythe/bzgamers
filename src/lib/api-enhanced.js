@@ -14,6 +14,7 @@ const { MOCK_GENRES, MOCK_GAMES, filterGamesByMood } = require('./mock-data')
 const rateLimiter = require('./rate-limiter')
 const { escapeIgdbString, toIgdbId, toIgdbIdList, safeSort, clampInt } = require('./igdb-sanitize')
 const dbCache = require('./db-cache')
+const twitchStatus = require('./twitch-status')
 
 // Flag to determine if we're using mock data
 const USE_MOCK_DATA = process.env.NODE_ENV === 'development' && 
@@ -100,9 +101,11 @@ async function getAccessToken() {
     )
     
     console.log(`✅ New token obtained (expires in ${data.expires_in}s)`)
+    await twitchStatus.recordTokenSuccess()
     
     return data.access_token
   } catch (error) {
+    await twitchStatus.recordTokenFailure(error)
     throw handleApiError(error, 'getAccessToken')
   }
 }

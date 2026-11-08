@@ -7,12 +7,16 @@ const {
   mockCreate,
   mockUpdate,
   mockEmailsSend,
+  mockVerifyTurnstile,
 } = vi.hoisted(() => ({
   mockFindUnique: vi.fn(),
   mockCreate: vi.fn(),
   mockUpdate: vi.fn(),
   mockEmailsSend: vi.fn(),
+  mockVerifyTurnstile: vi.fn(),
 }))
+
+vi.mock('@/lib/turnstile', () => ({ verifyTurnstile: mockVerifyTurnstile }))
 
 vi.mock('../../../generated/prisma', () => ({
   PrismaClient: class MockPrismaClient {
@@ -44,6 +48,7 @@ describe('POST /api/waitlist', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     process.env.RESEND_API_KEY = 're_test_key'
+    mockVerifyTurnstile.mockResolvedValue({ ok: true })
     mockEmailsSend.mockResolvedValue({ data: { id: 'email-1' }, error: null })
   })
 
@@ -57,6 +62,16 @@ describe('POST /api/waitlist', () => {
       expect(mockCreate).not.toHaveBeenCalled()
     }
   )
+
+  it('rejects the request when captcha verification fails', async () => {
+    mockVerifyTurnstile.mockResolvedValue({ ok: false, status: 400, error: 'Captcha verification failed. Please try again.' })
+    const res = await POST(jsonRequest({ email: 'new@example.com', turnstileToken: 'bad' }))
+    const { status, data } = await parseRouteResponse(res)
+    expect(status).toBe(400)
+    expect(data.success).toBe(false)
+    expect(mockFindUnique).not.toHaveBeenCalled()
+    expect(mockCreate).not.toHaveBeenCalled()
+  })
 
   it('returns 409 when email is already on waitlist', async () => {
     mockFindUnique.mockResolvedValue({ id: 1, email: 'dup@example.com' })

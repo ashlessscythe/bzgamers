@@ -4,6 +4,7 @@ import { getWaitlistAutoWelcomeEmail } from '../../../lib/email-templates'
 import { getResend } from '../../../lib/resend'
 import { rateLimit } from '../../../lib/request-limiter'
 import { isValidEmail, normalizeEmail } from '../../../lib/validation'
+import { verifyTurnstile } from '@/lib/turnstile'
 
 
 /**
@@ -15,12 +16,23 @@ export async function POST(request) {
     const limited = rateLimit(request, 'waitlist', { limit: 5, windowMs: 3600000 })
     if (limited) return limited
 
-    const { email } = await request.json()
+    const { email, turnstileToken } = await request.json()
 
     if (!isValidEmail(email)) {
       return NextResponse.json(
         { error: 'Valid email is required' },
         { status: 400 }
+      )
+    }
+
+    const captcha = await verifyTurnstile(
+      turnstileToken,
+      request.headers.get('cf-connecting-ip') ?? undefined
+    )
+    if (!captcha.ok) {
+      return NextResponse.json(
+        { error: captcha.error, success: false },
+        { status: captcha.status }
       )
     }
 

@@ -89,8 +89,8 @@ This document outlines the steps needed to complete the BZGamers MVP, organized 
   - [x] Set up NextAuth (credentials + JWT; not Neon Auth/Clerk)
   - [x] Create sign-up/login flows
   - [x] Implement anonymous browsing
-  - [ ] Add admin UI/endpoint to view Twitch token status and config
-  - [ ] Add logging/alerts for Twitch token failures
+  - [x] Add admin UI/endpoint to view Twitch token status and config (Admin → System tab)
+  - [x] Add logging/alerts for Twitch token failures (`[TWITCH_AUTH_FAILURE]` log line; optional hourly email via `ADMIN_ALERT_EMAIL`)
 - [x] Add user-specific features
   - [x] Create bookmarking functionality
   - [x] Encourage signins via favorites
@@ -152,7 +152,8 @@ This document outlines the steps needed to complete the BZGamers MVP, organized 
 ## Security Follow-ups
 - [x] Delete dead `src/pages-backup/` (stale copies of diagnostic API routes)
 - [x] Signup user enumeration: stop returning "Email already registered" (409)
-- [ ] Add Turnstile captcha to `/api/waitlist` and `/api/auth/reset-password` (currently rate-limited only; needs frontend)
+- [x] Add Turnstile captcha to `/api/waitlist` (server `src/lib/turnstile.js` + `TurnstileWidget` on the homepage form)
+- [x] `/api/auth/reset-password` left rate-limited only: it requires an unguessable one-time token, and the request step (`forgot-password`) already has Turnstile
 - [x] Strengthen password policy: min 8 chars, common-password blocklist, no email in password (signup, reset, UI)
 - [ ] Optional: online breach check (HaveIBeenPwned k-anonymity) at signup/reset
 - [ ] Email verification before sign-in (`emailVerified` exists in schema, unused)

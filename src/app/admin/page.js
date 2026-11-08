@@ -8,11 +8,12 @@ import FeedbackCard from '@/components/admin/FeedbackCard'
 import UserCard from '@/components/admin/UserCard'
 import WaitlistCard from '@/components/admin/WaitlistCard'
 import AnalyticsPanel from '@/components/admin/AnalyticsPanel'
+import TwitchStatusPanel from '@/components/admin/TwitchStatusPanel'
 
 export default function AdminPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
-  const [activeTab, setActiveTab] = useState('waitlist') // 'waitlist', 'users', 'feedback', or 'analytics'
+  const [activeTab, setActiveTab] = useState('waitlist') // 'waitlist', 'users', 'feedback', 'analytics', or 'system'
   const [waitlist, setWaitlist] = useState([])
   const [stats, setStats] = useState({ total: 0, notified: 0, unnotified: 0 })
   const [users, setUsers] = useState([])
@@ -364,6 +365,16 @@ export default function AdminPage() {
               }`}
             >
               Visitor Activity
+            </button>
+            <button
+              onClick={() => setActiveTab('system')}
+              className={`px-4 py-2 font-medium border-b-2 transition-colors ${
+                activeTab === 'system'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+              }`}
+            >
+              System
             </button>
           </div>
         </div>
@@ -1039,6 +1050,9 @@ export default function AdminPage() {
             )}
           </>
         )}
+
+        {/* System Tab Content */}
+        {activeTab === 'system' && <TwitchStatusPanel />}
 
         {/* Visitor Activity Tab Content */}
         {activeTab === 'analytics' && (
