@@ -112,7 +112,7 @@ This document outlines the steps needed to complete the BZGamers MVP, organized 
   - [ ] Set up production environment
   - [ ] Configure domain (bzgamers.com or similar)
   - [ ] Create deployment documentation
-    - Note for the docs: run `npx prisma migrate deploy` against the production DB before deploying a release that adds a migration (the build only runs `prisma generate`); set `NEXTAUTH_URL` (required in production) and optionally `ADMIN_ALERT_EMAIL`
+    - Note for the docs: `npm start` (`scripts/start.js`) runs `prisma migrate deploy` before `next start`, so migrations apply on boot. Hosts that don't use `npm start` (e.g. serverless) must run `npx prisma migrate deploy` themselves, since the build only runs `prisma generate`. Set `NEXTAUTH_URL` (required in production) and optionally `ADMIN_ALERT_EMAIL`
   - [x] Implement analytics (optional)
 
 ## Milestone 7: Gaming Psychology & Mindfulness Features
