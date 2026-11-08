@@ -3,6 +3,7 @@ import { rateLimit } from '@/lib/request-limiter'
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
 import { isValidEmail, getPasswordError, normalizeEmail } from '@/lib/validation'
+import { isPasswordBreached, BREACHED_PASSWORD_ERROR } from '@/lib/pwned-password'
 
 
 /**
@@ -34,6 +35,9 @@ export async function POST(request) {
     const passwordError = getPasswordError(password, { email })
     if (passwordError) {
       return NextResponse.json({ error: passwordError }, { status: 400 })
+    }
+    if (await isPasswordBreached(password)) {
+      return NextResponse.json({ error: BREACHED_PASSWORD_ERROR }, { status: 400 })
     }
 
     const normalizedEmail = normalizeEmail(email)

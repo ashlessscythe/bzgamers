@@ -111,7 +111,7 @@ This document outlines the steps needed to complete the BZGamers MVP, organized 
 - [ ] Prepare for deployment
   - [ ] Set up production environment
   - [ ] Configure domain (bzgamers.com or similar)
-  - [ ] Create deployment documentation
+  - [x] Create deployment documentation (`docs/deployment.md`)
     - Note for the docs: `npm start` (`scripts/start.js`) runs `prisma migrate deploy` before `next start`, so migrations apply on boot. Hosts that don't use `npm start` (e.g. serverless) must run `npx prisma migrate deploy` themselves, since the build only runs `prisma generate`. Set `NEXTAUTH_URL` (required in production) and optionally `ADMIN_ALERT_EMAIL`
   - [x] Implement analytics (optional)
 
@@ -156,7 +156,7 @@ This document outlines the steps needed to complete the BZGamers MVP, organized 
 - [x] Add Turnstile captcha to `/api/waitlist` (server `src/lib/turnstile.js` + `TurnstileWidget` on the homepage form)
 - [x] `/api/auth/reset-password` left rate-limited only: it requires an unguessable one-time token, and the request step (`forgot-password`) already has Turnstile
 - [x] Strengthen password policy: min 8 chars, common-password blocklist, no email in password (signup, reset, UI)
-- [ ] Optional: online breach check (HaveIBeenPwned k-anonymity) at signup/reset
+- [x] Optional: online breach check (HaveIBeenPwned k-anonymity, fail-open, `src/lib/pwned-password.js`) at signup/reset
 - [ ] Email verification before sign-in (`emailVerified` exists in schema, unused)
 - [x] Add HSTS header
 - [ ] Tighten CSP: replace `unsafe-inline`/`unsafe-eval` with nonces (needs per-request nonce via proxy and dynamic rendering)
@@ -166,7 +166,7 @@ This document outlines the steps needed to complete the BZGamers MVP, organized 
 - [x] Escape `name`/`email` in HTML email templates; sanitize admin custom email HTML
 - [x] Share one `PrismaClient` singleton instead of one per route file
 - [x] Fail hard (don't fall back to localhost/`VERCEL_URL`) when `NEXTAUTH_URL` is unset in production (password-reset links)
-- [ ] Review `trustHost: true` in `src/lib/auth-config.js` (left as-is; Auth.js trusts the host automatically on Vercel)
+- [x] Review `trustHost: true` in `src/lib/auth-config.js` (kept intentionally; rationale in `docs/deployment.md`)
 - [x] CSRF origin check on state-changing `/api/*` requests (`src/lib/csrf.js`, enforced in `src/proxy.js`)
 - [x] CI: raise `npm audit` threshold from critical to high
 - [x] Replace placeholder secrets in `.env.example` (e.g. `AUTH_SECRET="bruh"`) with obvious "change-me" values
