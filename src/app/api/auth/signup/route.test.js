@@ -56,13 +56,13 @@ describe('POST /api/auth/signup', () => {
     const res = await POST(
       jsonRequest({
         email: 'user@example.com',
-        password: '12345',
+        password: '1234567',
         turnstileToken: 't',
       })
     )
     const { status, data } = await parseRouteResponse(res)
     expect(status).toBe(400)
-    expect(data.error).toMatch(/6 characters/)
+    expect(data.error).toMatch(/8 characters/)
   })
 
   it('returns 400 when captcha fails', async () => {

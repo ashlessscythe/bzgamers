@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { rateLimit } from '@/lib/request-limiter'
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
+import { getPasswordError } from '@/lib/validation'
 
 
 /**
@@ -33,11 +34,9 @@ export async function POST(request) {
       )
     }
 
-    if (typeof password !== 'string' || password.length < 6 || password.length > 200) {
-      return NextResponse.json(
-        { error: 'Password must be at least 6 characters' },
-        { status: 400 }
-      )
+    const passwordError = getPasswordError(password)
+    if (passwordError) {
+      return NextResponse.json({ error: passwordError }, { status: 400 })
     }
 
     // Find the reset token

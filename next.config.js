@@ -44,6 +44,10 @@ const nextConfig = {
           },
           // Additional security headers
           {
+            key: 'Strict-Transport-Security',
+            value: 'max-age=63072000; includeSubDomains',
+          },
+          {
             key: 'X-Content-Type-Options',
             value: 'nosniff',
           },

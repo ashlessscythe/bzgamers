@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
+import { getPasswordError, MIN_PASSWORD_LENGTH } from '@/lib/validation'
 
 function ResetPasswordForm() {
   const router = useRouter()
@@ -34,8 +35,9 @@ function ResetPasswordForm() {
       return
     }
 
-    if (!password || password.length < 6) {
-      setError('Password must be at least 6 characters')
+    const passwordError = getPasswordError(password)
+    if (passwordError) {
+      setError(passwordError)
       return
     }
 
@@ -148,7 +150,7 @@ function ResetPasswordForm() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  minLength={6}
+                  minLength={MIN_PASSWORD_LENGTH}
                   className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                   placeholder="Enter new password"
                   disabled={isLoading}

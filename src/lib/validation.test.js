@@ -39,7 +39,18 @@ describe('normalizeEmail', () => {
 
 describe('isValidPassword', () => {
   it(`requires at least ${MIN_PASSWORD_LENGTH} characters`, () => {
-    expect(isValidPassword('12345')).toBe(false)
-    expect(isValidPassword('123456')).toBe(true)
+    expect(isValidPassword('1234567')).toBe(false)
+    expect(isValidPassword('x7Kq2mPz')).toBe(true)
+  })
+
+  it('rejects common and repeated-character passwords', () => {
+    expect(isValidPassword('password')).toBe(false)
+    expect(isValidPassword('Password123')).toBe(false) // matched case-insensitively
+    expect(isValidPassword('aaaaaaaaa')).toBe(false)
+  })
+
+  it('rejects passwords containing the email local part', () => {
+    expect(isValidPassword('alexander99!', { email: 'alexander@example.com' })).toBe(false)
+    expect(isValidPassword('alexander99!', { email: 'bob@example.com' })).toBe(true)
   })
 })

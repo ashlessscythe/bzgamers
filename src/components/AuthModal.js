@@ -5,7 +5,7 @@ import { signIn } from 'next-auth/react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import { loadTurnstile, isTurnstileLoaded } from '../lib/turnstile-loader'
-import { isValidPassword } from '../lib/validation'
+import { getPasswordError } from '../lib/validation'
 
 export default function AuthModal({ isOpen, onClose, initialMode = 'signin' }) {
   const [mode, setMode] = useState(initialMode) // 'signin' or 'signup'
@@ -233,8 +233,9 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'signin' }) {
     e.preventDefault()
     setError('')
 
-    if (!isValidPassword(password)) {
-      setError('Password must be at least 6 characters')
+    const passwordError = getPasswordError(password, { email })
+    if (passwordError) {
+      setError(passwordError)
       return
     }
 

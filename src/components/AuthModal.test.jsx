@@ -81,10 +81,10 @@ describe('AuthModal', () => {
     render(<AuthModal isOpen onClose={mockOnClose} initialMode="signup" />)
 
     fillField('auth-modal-email', 'new@example.com')
-    fillField('auth-modal-password', '12345')
+    fillField('auth-modal-password', '1234567')
     submitForm()
 
-    expect(screen.getByText('Password must be at least 6 characters')).toBeInTheDocument()
+    expect(screen.getByText('Password must be at least 8 characters')).toBeInTheDocument()
     expect(fetchMock).not.toHaveBeenCalled()
   })
 

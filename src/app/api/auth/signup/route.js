@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { rateLimit } from '@/lib/request-limiter'
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
-import { isValidEmail, isValidPassword, normalizeEmail } from '@/lib/validation'
+import { isValidEmail, getPasswordError, normalizeEmail } from '@/lib/validation'
 
 
 /**
@@ -31,11 +31,9 @@ export async function POST(request) {
       )
     }
 
-    if (!isValidPassword(password)) {
-      return NextResponse.json(
-        { error: 'Password must be at least 6 characters' },
-        { status: 400 }
-      )
+    const passwordError = getPasswordError(password, { email })
+    if (passwordError) {
+      return NextResponse.json({ error: passwordError }, { status: 400 })
     }
 
     const normalizedEmail = normalizeEmail(email)

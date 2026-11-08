@@ -153,9 +153,11 @@ This document outlines the steps needed to complete the BZGamers MVP, organized 
 - [x] Delete dead `src/pages-backup/` (stale copies of diagnostic API routes)
 - [x] Signup user enumeration: stop returning "Email already registered" (409)
 - [ ] Add Turnstile captcha to `/api/waitlist` and `/api/auth/reset-password` (currently rate-limited only; needs frontend)
-- [ ] Strengthen password policy (min 6 chars today) and add breach/complexity check
+- [x] Strengthen password policy: min 8 chars, common-password blocklist, no email in password (signup, reset, UI)
+- [ ] Optional: online breach check (HaveIBeenPwned k-anonymity) at signup/reset
 - [ ] Email verification before sign-in (`emailVerified` exists in schema, unused)
-- [ ] Tighten CSP: replace `unsafe-inline`/`unsafe-eval` with nonces; add HSTS header
+- [x] Add HSTS header
+- [ ] Tighten CSP: replace `unsafe-inline`/`unsafe-eval` with nonces (needs per-request nonce via proxy and dynamic rendering)
 - [x] Re-check admin role against the database in `/api/admin/*` (JWT role is trusted until expiry)
 - [ ] Back the rate limiter with a shared store (Redis/edge rule); current one is per-instance
 - [x] Replace `dangerouslySetInnerHTML` in `src/app/games/page.js` (personalized summary) with JSX
@@ -163,7 +165,7 @@ This document outlines the steps needed to complete the BZGamers MVP, organized 
 - [x] Share one `PrismaClient` singleton instead of one per route file
 - [x] Fail hard (don't fall back to localhost/`VERCEL_URL`) when `NEXTAUTH_URL` is unset in production (password-reset links)
 - [ ] Review `trustHost: true` in `src/lib/auth-config.js` (left as-is; Auth.js trusts the host automatically on Vercel)
-- [ ] CSRF origin check on cookie-authenticated JSON POST routes
+- [x] CSRF origin check on state-changing `/api/*` requests (`src/lib/csrf.js`, enforced in `src/proxy.js`)
 - [x] CI: raise `npm audit` threshold from critical to high
 - [x] Replace placeholder secrets in `.env.example` (e.g. `AUTH_SECRET="bruh"`) with obvious "change-me" values
 

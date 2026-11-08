@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { auth } from './lib/auth-config'
+import { isCrossSiteWrite } from './lib/csrf'
 
 /**
  * Proxy middleware to protect routes based on user roles
@@ -9,6 +10,20 @@ import { auth } from './lib/auth-config'
  */
 export async function proxy(request) {
   const { pathname } = request.nextUrl
+
+  // CSRF: reject cross-site state-changing requests to API routes
+  if (pathname.startsWith('/api/')) {
+    const configuredHost = (() => {
+      try {
+        return process.env.NEXTAUTH_URL ? new URL(process.env.NEXTAUTH_URL).host : null
+      } catch {
+        return null
+      }
+    })()
+    if (isCrossSiteWrite(request, [configuredHost])) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+  }
   
   // Always allow auth routes
   if (pathname.startsWith('/api/auth/') || pathname.startsWith('/auth/')) {
