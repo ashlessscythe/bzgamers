@@ -94,7 +94,7 @@ This document outlines the steps needed to complete the BZGamers MVP, organized 
 - [x] Add user-specific features
   - [x] Create bookmarking functionality
   - [x] Encourage signins via favorites
-  - [ ] Implement user preferences storage
+  - [x] Implement user preferences storage (`UserPreference` table, `/api/preferences`, profile panel; preferred platforms default the games platform filter)
   - [x] Add user profile page (basic)
 
 ## Milestone 6: Polish & Launch Preparation

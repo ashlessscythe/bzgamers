@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import CompactGameCard from '../../components/CompactGameCard'
 import AuthModal from '../../components/AuthModal'
+import PreferencesPanel from '../../components/PreferencesPanel'
 import { normalizeGame } from '@/lib/game-utils'
 
 export default function ProfilePage() {
@@ -98,6 +99,8 @@ export default function ProfilePage() {
           Welcome back, {session?.user?.name || session?.user?.email}!
         </p>
       </div>
+
+      <PreferencesPanel />
 
       {/* Profile sections - extensible for future features */}
       <div className="space-y-8">

@@ -1,7 +1,8 @@
 "use client"
 
 import { motion } from 'framer-motion'
-import { useState, useEffect, Suspense } from 'react'
+import { useState, useEffect, useRef, Suspense } from 'react'
+import { useSession } from 'next-auth/react'
 import { useSearchParams } from 'next/navigation'
 import GameResults from '@/components/GameResults'
 import GoToTopButton from '@/components/GoToTopButton'
@@ -117,6 +118,28 @@ function GamesContent() {
   })
 
   const { preferencesAllowed } = useCookieConsent()
+
+  // Signed-in users: use saved platform preferences as the default platform filter
+  const { status: authStatus } = useSession()
+  const appliedPreferences = useRef(false)
+  const showResultsRef = useRef(false)
+  useEffect(() => {
+    showResultsRef.current = showResults
+  }, [showResults])
+  useEffect(() => {
+    if (authStatus !== 'authenticated' || appliedPreferences.current) return
+    appliedPreferences.current = true
+    fetch('/api/preferences')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        const platforms = data?.preferences?.platforms
+        if (!Array.isArray(platforms) || platforms.length === 0) return
+        // Don't override a restored search or filters the user already set
+        if (showResultsRef.current) return
+        setAdvancedFilters((prev) => (prev.platforms.length > 0 ? prev : { ...prev, platforms }))
+      })
+      .catch(() => {})
+  }, [authStatus])
 
   // Load genres on component mount
   useEffect(() => {
