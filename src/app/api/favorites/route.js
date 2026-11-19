@@ -3,13 +3,14 @@ import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth-config'
 import { enrichFavorites } from '@/lib/favorite-enrichment'
 import { trackVisitorEventAsync } from '@/lib/analytics'
+import { rateLimit } from '@/lib/request-limiter'
 
 
 /**
  * GET /api/favorites
  * Get all favorites for the authenticated user
  */
-export async function GET(_request) {
+export async function GET(request) {
   try {
     const session = await auth()
     
@@ -19,6 +20,9 @@ export async function GET(_request) {
         { status: 401 }
       )
     }
+
+    const limited = await rateLimit(request, 'favorites', { limit: 60, windowMs: 60_000 })
+    if (limited) return limited
 
     const favorites = await prisma.favorite.findMany({
       where: {
@@ -58,6 +62,9 @@ export async function POST(request) {
         { status: 401 }
       )
     }
+
+    const limited = await rateLimit(request, 'favorites', { limit: 60, windowMs: 60_000 })
+    if (limited) return limited
 
     const { gameId, gameName, gameData } = await request.json()
 
@@ -135,6 +142,9 @@ export async function DELETE(request) {
         { status: 401 }
       )
     }
+
+    const limited = await rateLimit(request, 'favorites', { limit: 60, windowMs: 60_000 })
+    if (limited) return limited
 
     const { searchParams } = new URL(request.url)
     const gameId = searchParams.get('gameId')

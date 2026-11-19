@@ -3,6 +3,9 @@ import bcrypt from 'bcryptjs'
 import { normalizeEmail } from './validation'
 
 
+// bcrypt hash of a random string; only used to equalise timing
+const DUMMY_HASH = '$2b$10$sqJ4b.jhEnbLGNjkrWGrguxiMjG8n5lwBEq5vc6Yhxp6Ozqto1Yi6'
+
 /**
  * Verify user credentials
  * @param {string} email - User email
@@ -17,14 +20,11 @@ export async function verifyCredentials(email, password) {
       where: { email: normalizedEmail }
     })
 
-    if (!user) {
-      return null
-    }
+    // Always run a bcrypt compare (against a dummy hash for unknown emails) so
+    // response time does not reveal whether the account exists.
+    const isValid = await bcrypt.compare(password, user ? user.password : DUMMY_HASH)
 
-    console.log('[AUTH] User found, verifying password...')
-    const isValid = await bcrypt.compare(password, user.password)
-    
-    if (!isValid) {
+    if (!user || !isValid) {
       return null
     }
 

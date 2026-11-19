@@ -80,6 +80,9 @@ export async function POST(request) {
       )
     }
 
+    // Hash before the existence check so both paths take the same time
+    const hashedPassword = await bcrypt.hash(password, 10)
+
     // Check if user already exists
     const existing = await prisma.user.findUnique({
       where: { email: normalizedEmail }
@@ -95,11 +98,8 @@ export async function POST(request) {
       })
     }
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10)
-
     // Create user with GUEST role
-    const user = await prisma.user.create({
+    await prisma.user.create({
       data: {
         email: normalizedEmail,
         password: hashedPassword,
@@ -108,13 +108,10 @@ export async function POST(request) {
       }
     })
 
-    // Return user without password
-    const { password: _, ...userWithoutPassword } = user
-
+    // Identical to the "already registered" response (no user enumeration)
     return NextResponse.json({
       success: true,
-      message: 'Account created successfully',
-      user: userWithoutPassword
+      message: 'Account created successfully'
     })
   } catch (error) {
     console.error('Error creating user:', error)

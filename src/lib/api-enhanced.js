@@ -251,7 +251,7 @@ async function fetchGames({
     query += ` where ${where};`
   }
   
-  query += ` sort ${sort}; limit ${limit}; offset ${offset};`
+  query += ` sort ${sort}; limit ${clampInt(limit, 1, 50, 10)}; offset ${clampInt(offset, 0, 5000, 0)};`
   
   const results = await igdbRequest('games', query)
   
@@ -455,12 +455,12 @@ async function findGamesByMood({
   let whereClause = []
   
   // Add mood filter
-  if (mood && moodMappings[mood]) {
+  if (mood && Object.hasOwn(moodMappings, mood)) {
     whereClause.push(`(${moodMappings[mood]})`)
   }
   
   // Add time filter
-  if (timeAvailable && timeMappings[timeAvailable]) {
+  if (timeAvailable && Object.hasOwn(timeMappings, timeAvailable)) {
     whereClause.push(`(${timeMappings[timeAvailable]})`)
   }
   
@@ -534,7 +534,7 @@ async function findGamesByMood({
   const sort = `${safe.sortBy} ${safe.sortOrder}`
   
   // Use a smaller limit for faster initial results
-  const searchLimit = Math.min(limit, 15)
+  const searchLimit = Math.min(clampInt(limit, 1, 15, 15), 15)
   
   const results = await fetchGames({
     limit: searchLimit,

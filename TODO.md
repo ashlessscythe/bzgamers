@@ -172,6 +172,8 @@ This document outlines the steps needed to complete the BZGamers MVP, organized 
 - [x] CI: raise `npm audit` threshold from critical to high
 - [x] Replace placeholder secrets in `.env.example` (e.g. `AUTH_SECRET="bruh"`) with obvious "change-me" values
 
+- [x] Sweep (Nov 2026): Next 16.4.6; IGDB `limit`/`offset` clamped at the query builder (body `offset` was injectable); `games-by-mood` / `games-filtered` input validated before cache keys; rate limits on all public/favorites routes; signup no longer returns a user object and hashes before the existence check; login runs bcrypt for unknown emails; `/api/test-igdb` and `/api/compliance-check` re-check admin role in the DB
+
 ## Notes
 - Remember to maintain the sleek, colorful, uplifting design throughout
 - Focus on responsive design from the beginning

@@ -248,7 +248,7 @@ const fetchGames = withCache(
       query += ` where ${where};`
     }
     
-    query += ` sort ${sort}; limit ${limit}; offset ${offset};`
+    query += ` sort ${sort}; limit ${clampInt(limit, 1, 50, 10)}; offset ${clampInt(offset, 0, 5000, 0)};`
     
     return igdbRequest('games', query)
   },
@@ -350,12 +350,12 @@ const findGamesByMood = withCache(
     let whereClause = []
     
     // Add mood filter
-    if (mood && moodMappings[mood]) {
+    if (mood && Object.hasOwn(moodMappings, mood)) {
       whereClause.push(`(${moodMappings[mood]})`)
     }
     
     // Add time filter
-    if (timeAvailable && timeMappings[timeAvailable]) {
+    if (timeAvailable && Object.hasOwn(timeMappings, timeAvailable)) {
       whereClause.push(`(${timeMappings[timeAvailable]})`)
     }
     

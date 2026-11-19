@@ -6,9 +6,13 @@
  */
 
 import { fetchGenres } from '@/lib/api'
+import { rateLimit } from '@/lib/request-limiter'
 
-export async function GET() {
+export async function GET(request) {
   try {
+    const limited = await rateLimit(request, 'genres', { limit: 60, windowMs: 60_000 })
+    if (limited) return limited
+
     const genres = await fetchGenres()
     return Response.json(genres)
   } catch (error) {

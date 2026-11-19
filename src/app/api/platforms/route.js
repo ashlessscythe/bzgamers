@@ -6,9 +6,13 @@
  */
 
 import { fetchPlatforms } from '@/lib/api-enhanced'
+import { rateLimit } from '@/lib/request-limiter'
 
-export async function GET() {
+export async function GET(request) {
   try {
+    const limited = await rateLimit(request, 'platforms', { limit: 60, windowMs: 60_000 })
+    if (limited) return limited
+
     const platforms = await fetchPlatforms()
     return Response.json(platforms)
   } catch (error) {

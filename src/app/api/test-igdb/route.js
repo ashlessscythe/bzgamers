@@ -21,12 +21,7 @@ import {
   fetchThemes,
   testApiConnection
 } from '../../../lib/api';
-import { auth } from '@/lib/auth-config'
-
-async function requireAdmin() {
-  const session = await auth()
-  return session?.user?.role === 'ADMIN'
-}
+import { requireAdmin } from '@/lib/require-admin'
 
 export async function GET() {
   if (!(await requireAdmin())) {

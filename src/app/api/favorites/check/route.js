@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth-config'
+import { rateLimit } from '@/lib/request-limiter'
 
 
 /**
@@ -19,6 +20,9 @@ export async function POST(request) {
         favoritedGameIds: []
       })
     }
+
+    const limited = await rateLimit(request, 'favorites-check', { limit: 60, windowMs: 60_000 })
+    if (limited) return limited
 
     const { gameIds } = await request.json()
 

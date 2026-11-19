@@ -8,9 +8,15 @@
 import { findGamesByMood } from '@/lib/api'
 import { getCachedSearch, cacheSearch } from '@/lib/db-cache'
 import { trackVisitorEventAsync } from '@/lib/analytics'
+import { rateLimit } from '@/lib/request-limiter'
+
+const shortText = (v) => (typeof v === 'string' && v.length <= 100 ? v : null)
 
 export async function POST(request) {
   try {
+    const limited = await rateLimit(request, 'games-by-mood', { limit: 60, windowMs: 60_000 })
+    if (limited) return limited
+
     let body
     try {
       body = await request.json()
@@ -21,15 +27,20 @@ export async function POST(request) {
       )
     }
     
-    const {
-      mood,
-      timeAvailable,
-      genre,
-      offset = 0,
-      moodLabel,
-      timeLabel,
-      genreLabel,
-    } = body
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
+      return Response.json({ error: 'Invalid request body' }, { status: 400 })
+    }
+
+    // Only primitives of bounded size reach cache keys and IGDB queries
+    const mood = shortText(body.mood)
+    const timeAvailable = shortText(body.timeAvailable)
+    const genre =
+      typeof body.genre === 'number' && Number.isInteger(body.genre) ? body.genre : shortText(body.genre)
+    const offsetNum = Number(body.offset ?? 0)
+    const offset = Number.isInteger(offsetNum) ? Math.min(Math.max(offsetNum, 0), 5000) : 0
+    const moodLabel = shortText(body.moodLabel)
+    const timeLabel = shortText(body.timeLabel)
+    const genreLabel = shortText(body.genreLabel)
     const params = { mood, timeAvailable, genre, offset }
 
     // 1. Try to get cached results (only for first page)

@@ -120,11 +120,9 @@ describe('POST /api/auth/signup', () => {
 
     expect(status).toBe(200)
     expect(data.success).toBe(true)
-    expect(data.user).toMatchObject({
-      email: 'new@example.com',
-      role: 'GUEST',
-    })
-    expect(data.user).not.toHaveProperty('password')
+    // Same shape as the existing-account response, and never leaks the record
+    expect(data.user).toBeUndefined()
+    expect(JSON.stringify(data)).not.toContain('hashed:')
     expect(mockCreate).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({

@@ -34,3 +34,12 @@ Compatible override used in this and sibling repos:
 
 - `postcss-selector-parser@7.1.7` — clears the moderate PostCSS selector
   parsing advisory without leaving Tailwind 3.
+
+## 2026-11 sweep
+
+- `npm audit --omit=dev`: **0 vulnerabilities** (Next bumped to 16.4.6, which
+  fixes the `use cache` / `unstable_cache` advisories; we don't use either).
+- Remaining 14 moderate findings are dev-only lint tooling (`eslint`,
+  `@typescript-eslint/*`, `minimatch`, `eslint-plugin-*`). npm's only
+  suggested fix downgrades `eslint-config-next` to 15.x — do not; stay aligned
+  with Next 16. CI gates on `high`.
